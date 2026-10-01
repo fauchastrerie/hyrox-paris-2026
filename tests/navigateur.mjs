@@ -11,6 +11,8 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { SEMAINES } from '../programme.js';
+import { texteAvecValeurs } from '../calculs.js';
 
 const { chromium } = await import(process.env.PLAYWRIGHT ?? 'playwright');
 const BASE = process.env.BASE ?? 'http://127.0.0.1:8765/';
@@ -37,6 +39,38 @@ const etat = (page) => page.evaluate((cle) => JSON.parse(localStorage.getItem(cl
 const aller = async (page, hash) => { await page.evaluate((h) => { location.hash = h; }, hash); await page.waitForTimeout(120); };
 // textContent (et non innerText) : le texte du programme, sans les majuscules ajoutées par le CSS.
 const texte = async (page, sel) => (await page.locator(sel).first().textContent()).replace(/\s+/g, ' ').trim();
+
+// ---------- A0. Fidélité de l'affichage ----------
+console.log('\nA0. Texte du programme affiché à l\'identique (étapes comprises)');
+{
+  const { ctx, page: p } = await nouveauContexte();
+  await p.goto(`${BASE}?date=2026-10-01#/aujourdhui`);
+  await p.waitForSelector('.entete__compte');
+  const ecarts = [];
+  let n = 0;
+  const champs = [['echauffement', 'Échauffement'], ['corps', 'Corps'], ['retourCalme', 'Retour au calme'], ['objectif', 'Objectif']];
+  for (const j of SEMAINES.flatMap((s) => s.jours)) {
+    if (!j.corps) continue;
+    n++;
+    await p.evaluate((h) => { location.hash = h; }, `#/seance/${j.id}`);
+    await p.waitForTimeout(30);
+    // Texte affiché, hors décor : tuiles d'icônes, numéros de blocs, repère EF ajouté par l'appli.
+    const blocs = await p.$$eval('.split__detail .seance__bloc', (els) => els.map((e) => {
+      const copie = e.cloneNode(true);
+      copie.querySelectorAll('.tuile, .circuit__num, .repere-ef').forEach((x) => x.remove());
+      return { titre: copie.querySelector('h2').textContent.trim(), texte: [...copie.children].slice(1).map((c) => c.textContent).join('') };
+    }));
+    for (const [champ, titre] of champs) {
+      const b = blocs.find((x) => x.titre.endsWith(titre));
+      const attendu = texteAvecValeurs(j[champ], { seuil: 297, S: 12, fcSeuil: null }).replace(/\s+/g, '');
+      if (!b || b.texte.replace(/\s+/g, '') !== attendu) ecarts.push(`${j.id}.${champ}`);
+    }
+    const duree = blocs.find((x) => x.titre.endsWith('Durée'));
+    if (!duree || duree.texte.trim() !== `${j.dureeTexte}.`) ecarts.push(`${j.id}.duree`);
+  }
+  verifier(`Affichage : ${n} séances détaillées, sections dans l'ordre et texte intact`, ecarts.length === 0 && n === 33, ecarts.join(', '));
+  await ctx.close();
+}
 
 // ---------- A. Parcours fonctionnels ----------
 console.log('\nA. Saisies et règles du programme');
@@ -323,7 +357,11 @@ function auditPage() {
   }
 
   // Contraste du texte (AA) : couleur du texte contre le premier fond opaque.
-  const rgb = (c) => { const m = c.match(/[\d.]+/g); return m ? m.map(Number) : [0, 0, 0, 0]; };
+  const rgb = (c) => {
+    const m = c.match(/[\d.]+/g)?.map(Number);
+    if (!m) return [0, 0, 0, 0];
+    return c.startsWith('color(srgb') ? [m[0] * 255, m[1] * 255, m[2] * 255, m[3] ?? 1] : m;
+  };
   const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
   const fond = (el) => {
     for (let n = el; n; n = n.parentElement) {
@@ -335,7 +373,7 @@ function auditPage() {
   let mini = 99, pire = '';
   for (const el of document.querySelectorAll('main *, .onglets *, #bandeaux *')) {
     if (!visible(el) || el.closest('svg')) continue;
-    const direct = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    const direct = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim() && !/^[\p{Extended_Pictographic}\u200d\ufe0f\s]+$/u.test(n.textContent));
     if (!direct) continue;
     if (el.closest('.barre-action') && getComputedStyle(el.closest('.barre-action')).position === 'fixed' && !el.closest('.bouton')) continue;
     const cs = getComputedStyle(el);

@@ -197,6 +197,55 @@ export function texteAvecValeurs(texte, ctx) {
   });
 }
 
+// ---------- Découpage du corps d'une séance en étapes (affichage) ----------
+
+/**
+ * Découpe un texte de séance pour l'afficher en étapes, sans rien perdre :
+ * phrases (« . » suivi d'une majuscule), blocs (« ; »), étapes (« → »),
+ * introduction avant le premier « : » ou la première virgule (« Pré-fatigue, 1 km… »).
+ * recomposerCorps(decouperCorps(t)) === t pour tout texte.
+ */
+export function decouperCorps(texte) {
+  const phrases = [];
+  let debut = 0;
+  for (const m of texte.matchAll(/\. (?=[A-ZÀÂÉÈÊÎÔÛÇ0-9])/g)) {
+    phrases.push(texte.slice(debut, m.index + 1));
+    debut = m.index + 2;
+  }
+  phrases.push(texte.slice(debut));
+  return phrases.map((p) => {
+    if (!p.includes(' → ') && !p.includes(' ; ')) {
+      // Liste après « : » dont tous les éléments commencent par un nombre (stations de la simulation).
+      const i = p.lastIndexOf(' : ');
+      const elements = i >= 0 ? p.slice(i + 3).split(', ') : [];
+      if (elements.length >= 3 && elements.every((x) => /^\d/.test(x))) {
+        return { groupes: [{ intro: p.slice(0, i + 2), etapes: elements, sep: ', ' }] };
+      }
+      return { texte: p };
+    }
+    return {
+      groupes: p.split(' ; ').map((g) => {
+        if (!g.includes(' → ')) return { texte: g };
+        const etapes = g.split(' → ');
+        let intro = null;
+        const i = etapes[0].lastIndexOf(' : ');
+        if (i >= 0) {
+          intro = etapes[0].slice(0, i + 2);
+          etapes[0] = etapes[0].slice(i + 3);
+        } else {
+          const v = etapes[0].match(/^([^\d,]+,) (\d.*)$/);
+          if (v) { intro = v[1]; etapes[0] = v[2]; }
+        }
+        return { intro, etapes };
+      }),
+    };
+  });
+}
+
+export function recomposerCorps(phrases) {
+  return phrases.map((p) => (p.texte != null ? p.texte : p.groupes.map((g) => (g.texte != null ? g.texte : (g.intro ? `${g.intro} ` : '') + g.etapes.join(g.sep ?? ' → '))).join(' ; '))).join(' ');
+}
+
 // ---------- Règles du programme ----------
 
 /** Règle de révision après le retest de la semaine 9. */

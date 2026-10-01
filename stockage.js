@@ -13,7 +13,7 @@ export function etatInitial() {
     saisies: {},
     reperes: { seuil: 297, fcSeuil: null, maxWB: null, S: 12, objectif: '1h27', objectifSource: 'defaut' },
     ajustements: {},
-    meta: { dernierExport: null, bandeauInstallMasque: false },
+    meta: { dernierExport: null, bandeauInstallMasque: false, guideMasque: false },
   };
 }
 

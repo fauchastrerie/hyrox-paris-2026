@@ -88,6 +88,25 @@ test('semaine 11 : lun run1, mar push, mer pull, jeu run2, ven course', () => {
   assert.deepEqual(SEMAINES[10].jours.map((j) => j.type), ['run1', 'push', 'pull', 'run2', 'course']);
 });
 
+test('affichage en étapes : chaque texte de séance se recompose à l\'identique', () => {
+  for (const j of JOURS.values()) {
+    for (const champ of ['echauffement', 'corps', 'retourCalme', 'objectif']) {
+      if (j[champ] == null) continue;
+      assert.equal(C.recomposerCorps(C.decouperCorps(j[champ])), j[champ], `${j.id}.${champ}`);
+    }
+  }
+});
+test('affichage en étapes : circuit de S3 samedi découpé en introduction et 3 étapes', () => {
+  const [p1, p2] = C.decouperCorps(JOURS.get('s3-sam').corps);
+  assert.equal(p1.groupes[0].intro, 'bloc J-dév, puis 3 tours avec 2:00 entre les tours :');
+  assert.deepEqual(p1.groupes[0].etapes, ['1 km à 5:55', '25 m de sled push à 152 kg', '25 m de sled pull à 103 kg.']);
+  assert.equal(p2.groupes[0].intro, 'Enchaîné :');
+  const s6 = C.decouperCorps(JOURS.get('s6-sam').corps)[0];
+  assert.equal(s6.groupes.length, 4);
+  const s9 = C.decouperCorps(JOURS.get('s9-sam').corps)[0];
+  assert.equal(s9.groupes[0].intro, 'pré-fatigue,');
+});
+
 console.log('\nAllures');
 const allure = (id, seuil) => C.formatMinSec(C.allureEnVigueur(JOURS.get(id), seuil));
 test('seuil 4:57 → s3-lun 4:57, s6-lun 4:54, s8-lun 4:52, 400 m de s5-lun 1:45', () => {

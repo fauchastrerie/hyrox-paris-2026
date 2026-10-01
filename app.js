@@ -153,7 +153,8 @@ function enrichir(source, { jour = null, abbr = true, exclure = null } = {}) {
       else if (jeton === 'ef') out += v.fcSeuil ? val(r, true) : esc(r);
       else out += `<strong class="val val--perso${jeton.startsWith('seuil') && ajuste ? ' val--ajuste' : ''}">${esc(r)}</strong>${wb ? ' ' + terme('WB') : ''}`;
     } else if (temps) {
-      out += val(temps);
+      const allure = /\/(km|500)$/.test(temps) || /(à|en) $/.test(texte.slice(Math.max(0, m.index - 3), m.index));
+      out += `<strong class="val${allure ? ' val--allure' : ''}">${esc(temps)}</strong>`;
     } else if (url) {
       out += `<a href="${esc(url)}" rel="noopener noreferrer" target="_blank">${esc(url)}</a>`;
     } else if (abr) {
@@ -223,7 +224,7 @@ function basculerDefinition(bouton) {
   const lignes = g.refs.map(texteReference).filter(Boolean).map((t) => `<span class="definition__ligne">${enrichir(t, { exclure: cle })}</span>`);
   const plus = complementDefinition(cle);
   def.innerHTML = `<span class="definition__titre">${esc(cle === 'prévention tibias' ? 'Prévention tibias' : cle)} · ${esc(g.nom)}</span>${lignes.join('')}${plus ? `<span class="definition__ligne definition__perso">${plus}</span>` : ''}`;
-  const hote = bouton.parentElement.closest('.definition, p, li, td, th, dd, .texte') ?? bouton.parentElement;
+  const hote = bouton.parentElement.closest('.definition, .etape__texte, .circuit__intro, p, li, td, th, dd, .texte') ?? bouton.parentElement;
   hote.append(def);
   bouton.setAttribute('aria-controls', def.id);
   bouton.setAttribute('aria-expanded', 'true');
@@ -258,8 +259,65 @@ function rendreBlocs(blocs) {
   }).join('');
 }
 
-function repliable(titre, contenu, { ouvert = false, id = '' } = {}) {
-  return `<details class="repliable carte"${id ? ` id="${id}"` : ''}${ouvert ? ' open' : ''}><summary><span>${esc(titre)}</span></summary><div class="repliable__corps">${contenu}</div></details>`;
+function repliable(titre, contenu, { ouvert = false, id = '', emoji = '' } = {}) {
+  return `<details class="repliable carte"${id ? ` id="${id}"` : ''}${ouvert ? ' open' : ''}><summary>${emoji ? tuile(emoji, 'petite') : ''}<span>${esc(titre)}</span></summary><div class="repliable__corps">${contenu}</div></details>`;
+}
+
+// ---------- Icônes : emoji du système, rien à télécharger ----------
+const EMOJI_TYPE = { run1: '⚡', run2: '🏃', push: '💪', pull: '🧗', hyrox: '🏋️', course: '🏁', repos: '🌙' };
+const EMOJI_STATION = { ski: '⛷️', sledPush: '🛷', sledPull: '🪢', bbj: '🤸', row: '🚣', farmers: '🧳', fentes: '🦵', wb: '🏐' };
+const JOUR_COURT = { lun: 'lun', mar: 'mar', mer: 'mer', jeu: 'jeu', ven: 'ven', sam: 'sam', dim: 'dim' };
+
+function tuile(emoji, taille = '') {
+  return `<span class="tuile${taille ? ` tuile--${taille}` : ''}" aria-hidden="true">${emoji}</span>`;
+}
+
+function iconeEtape(texte) {
+  const t = texte.toLowerCase();
+  if (/sled push|\bpush\b/.test(t)) return EMOJI_STATION.sledPush;
+  if (/sled pull|\bpull\b/.test(t)) return EMOJI_STATION.sledPull;
+  if (/\bwb\b|wall ball/.test(t)) return EMOJI_STATION.wb;
+  if (/bbj|burpee/.test(t)) return EMOJI_STATION.bbj;
+  if (/fentes/.test(t)) return EMOJI_STATION.fentes;
+  if (/rameur/.test(t)) return EMOJI_STATION.row;
+  if (/skierg/.test(t)) return EMOJI_STATION.ski;
+  if (/farmers/.test(t)) return EMOJI_STATION.farmers;
+  if (/bloc j-|jambes légères|squat/.test(t)) return '🏋️';
+  if (/gorgées|point d'eau|boisson/.test(t)) return '💧';
+  if (/transitions/.test(t)) return '⏱️';
+  if (/stations/.test(t)) return '🎯';
+  if (/\bkm\b|\d m\b|\bef\b|\br1\b|allure|lignes droites/.test(t)) return '🏃';
+  if (/marche|récup/.test(t)) return '⏸️';
+  return '▸';
+}
+
+function puce(emoji, contenu, classe = '') {
+  return `<span class="puce${classe ? ` ${classe}` : ''}">${emoji ? `<span class="puce__emoji" aria-hidden="true">${emoji}</span>` : ''}${contenu}</span>`;
+}
+
+function signeStatut(statut, decoratif = false) {
+  if (!statut) return '';
+  const [signe, libelle] = PASTILLES[statut];
+  return `<span class="signe signe--${statut}"${decoratif ? ' aria-hidden="true"' : ` role="img" aria-label="${libelle}" title="${libelle}"`}>${signe}</span>`;
+}
+
+function anneau(fraction, centre, etiquette) {
+  const r = 32;
+  const c = 2 * Math.PI * r;
+  const f = Math.max(0, Math.min(1, fraction || 0));
+  return `<div class="anneau" role="img" aria-label="${esc(etiquette)}">
+    <svg viewBox="0 0 80 80" width="80" height="80" aria-hidden="true" focusable="false">
+      <circle class="anneau__fond" cx="40" cy="40" r="${r}"/>
+      ${f > 0 ? `<circle class="anneau__plein" cx="40" cy="40" r="${r}" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 40 40)"/>` : ''}
+    </svg>
+    <span class="anneau__centre" aria-hidden="true">${centre}</span>
+  </div>`;
+}
+
+function stationsPuce(jour) {
+  const st = STATIONS.filter((x) => jour.stations?.includes(x.cle));
+  if (!st.length) return '';
+  return puce('', `<span class="puce__emojis" aria-hidden="true">${st.map((x) => EMOJI_STATION[x.cle]).join('')}</span>${st.length > 1 ? `${st.length} stations` : esc(st[0].nom)}`);
 }
 
 // ---------- Écran Aujourd'hui ----------
@@ -275,33 +333,71 @@ function vueAujourdhui() {
     carte = x.jour.type === 'repos' ? carteRepos(vu) : carteSeance(x);
   }
   return `<h1 class="visuellement-cache">Aujourd'hui</h1>
-    ${enteteJour(sit)}
+    ${enteteJour(sit, vu)}
+    ${sit.periode === 'programme' ? bandeSemaine(sit.semaine, vu) : ''}
     ${rappelsHtml(vu)}
     ${carte}
+    ${guideDemarrage()}
     ${lignesDiscretes(auj)}
     ${navigationJour(vu, auj)}`;
 }
 
-function enteteJour(sit) {
+function enteteJour(sit, vu) {
   const obj = objectifCourse();
   const revise = obj !== OBJECTIF_DEFAUT;
-  let compte;
-  let lignes = '';
-  if (sit.periode === 'apres') compte = 'Terminé';
-  else if (sit.jMoins === 0) compte = 'Jour J';
-  else compte = `J-${sit.jMoins}`;
-  if (sit.periode === 'avant') {
-    lignes = `<p class="entete__semaine">Début lundi 5 octobre, dans <span class="num">${pluriel(sit.joursAvantDebut, 'jour')}</span></p>`;
-  } else if (sit.periode === 'programme') {
-    const s = SEMAINES[sit.semaine - 1];
-    lignes = `<p class="entete__semaine">Semaine ${s.numero}/11 · ${phaseBadge(s)}</p>
-      <p class="entete__objectif">${enrichir(s.objectif, { abbr: false })}</p>`;
-  }
-  return `<header class="entete">
-    <p class="entete__compte" aria-label="${sit.periode === 'apres' ? 'Programme terminé' : sit.jMoins === 0 ? 'Jour de course' : `${sit.jMoins} jours avant la course`}">${compte}</p>
-    ${lignes}
-    <p class="entete__course">Objectif course ${val(obj, revise)}${revise ? ' <span class="etiquette">révisé</span>' : ''} · vendredi 18 déc., 9h</p>
+  const total = C.ecartJours(DEBUT, DATE_COURSE);
+  const ecoule = Math.max(0, Math.min(total, C.ecartJours(DEBUT, vu)));
+  const s = sit.periode === 'programme' ? SEMAINES[sit.semaine - 1] : null;
+  const compte = sit.periode === 'apres' ? 'Terminé' : sit.jMoins === 0 ? 'Jour J' : `J-${sit.jMoins}`;
+  const libelle = sit.periode === 'apres' ? 'Programme terminé' : sit.jMoins === 0 ? 'Jour de course' : `${sit.jMoins} jours avant la course`;
+  const sous = sit.periode === 'avant' ? `Début lundi 5 octobre, dans ${pluriel(sit.joursAvantDebut, 'jour')}`
+    : sit.periode === 'apres' ? 'Hyrox Paris · vendredi 18 décembre'
+      : sit.jMoins === 0 ? 'Départ à 9h · Open men' : 'avant Paris · ven. 18 déc., 9h';
+  const centre = s ? `<b>S${s.numero}</b><small>sur 11</small>` : sit.periode === 'avant' ? '<b>S1</b><small>sur 11</small>' : '<b>✓</b>';
+  return `<header class="entete"${s ? ` data-phase="${s.phase}"` : ''}>
+    <div class="entete__haut">
+      <div class="entete__texte">
+        <p class="entete__compte" aria-label="${libelle}">${compte}</p>
+        <p class="entete__sous">${esc(sous)}</p>
+      </div>
+      ${anneau(ecoule / total, centre, s ? `Semaine ${s.numero} sur 11, ${Math.round((ecoule / total) * 100)} % du programme` : 'Progression du programme')}
+    </div>
+    ${s ? `<p class="entete__semaine">Semaine ${s.numero}/11 · ${phaseBadge(s)}</p>
+      <p class="entete__objectif">${esc(s.objectif)}</p>` : ''}
+    <p class="entete__course"><span aria-hidden="true">🎯</span> Objectif course ${val(obj, revise)}${revise ? ' <span class="etiquette">révisé</span>' : ''}</p>
   </header>`;
+}
+
+function bandeSemaine(numero, vu) {
+  const s = SEMAINES[numero - 1];
+  const auj = aujourdhui();
+  return `<div class="bande" role="group" aria-label="Séances de la semaine ${s.numero}">
+    ${s.jours.filter((j) => j.type !== 'repos').map((j) => {
+      const st = statutJour(j);
+      const actif = j.date === vu;
+      return `<button type="button" class="bande__jour${actif ? ' bande__jour--actif' : ''}${j.date === auj ? ' bande__jour--auj' : ''}" data-action="voir-jour" data-date="${j.date}" aria-pressed="${actif}" aria-label="${esc(maj1(C.formatDateLongue(j.date)))}, ${esc(TYPES[j.type].libelle)}, ${PASTILLES[st][1]}">
+        <span class="bande__nom">${JOUR_COURT[j.jour]}</span>
+        <span class="bande__num num">${C.versDate(j.date).getDate()}</span>
+        <span class="bande__emoji" aria-hidden="true">${EMOJI_TYPE[j.type]}</span>
+        ${signeStatut(st, true)}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+function guideDemarrage() {
+  if (Object.keys(etat.saisies).length || etat.meta.guideMasque) return '';
+  const etapes = [
+    ['Fais ta séance', 'Tout le détail est dans « Voir la séance ».'],
+    ['Saisis-la juste après', "Bouton « Saisir ma séance » : statut, effort, chronos. Tout s'enregistre seul."],
+    ['Tes tests règlent le plan', 'Test 30 min (lun. 12 oct.) et test wall balls (sam. 17 oct.) : allures et séries recalculées.'],
+    ['Suis ta progression', 'Onglet Suivi : séances faites, effort, tests de S5 et S9.'],
+  ];
+  return `<section class="carte guide" aria-labelledby="t-guide">
+    <h2 id="t-guide">Comment ça marche</h2>
+    <ol class="frise">${etapes.map(([t, d], i) => `<li><span class="frise__num" aria-hidden="true">${i + 1}</span><div><strong>${esc(t)}</strong><span>${esc(d)}</span></div></li>`).join('')}</ol>
+    <button type="button" class="bouton bouton--discret" data-action="masquer-guide">J'ai compris</button>
+  </section>`;
 }
 
 function navigationJour(vu, auj) {
@@ -317,25 +413,38 @@ function navigationJour(vu, auj) {
 }
 
 function allureCle(jour) {
-  if (jour.corps?.includes('{vma400}')) return `<p class="carte__allure">400 m en ${val(C.resoudreJeton('vma400', valeurs(jour)), true)}</p>`;
+  if (jour.corps?.includes('{vma400}')) return `400 m en ${C.resoudreJeton('vma400', valeurs(jour))}`;
   const a = C.allureEnVigueur(jour, etat.reperes.seuil, etat.ajustements);
-  if (a == null) return '';
-  return `<p class="carte__allure">Allure seuil ${val(C.formatMinSec(a) + '/km', true)}${jour.seuil && etat.ajustements[jour.id] ? ' <span class="etiquette">ajustée</span>' : ''}</p>`;
+  if (a == null) return null;
+  return `${C.formatMinSec(a)}/km${jour.seuil && etat.ajustements[jour.id] ? ' · ajustée' : ''}`;
 }
 
 function carteSeance({ jour, semaine }, { apercu = false } = {}) {
+  const muscu = jour.type === 'push' || jour.type === 'pull';
+  const allure = allureCle(jour);
+  const puces = [
+    jour.dureeTexte ? puce('⏱️', `<span class="num">${esc(jour.dureeTexte)}</span>`) : '',
+    allure ? puce('⚡', `<span class="num">${esc(allure)}</span>`, 'puce--accent') : '',
+    jour.consigneVolume ? puce('📉', esc(jour.consigneVolume), 'puce--accent') : '',
+    stationsPuce(jour),
+    apercu ? '' : pastille(statutJour(jour)),
+  ].join('');
   return `<article class="carte carte-seance" data-phase="${semaine.phase}">
     ${apercu ? '<p class="carte__apercu">Première séance · lundi 5 octobre</p>' : ''}
-    <p class="carte__sur"><span class="carte__type">${esc(TYPES[jour.type].libelle)}</span>${jour.dureeTexte ? ` · <span class="num">${esc(jour.dureeTexte)}</span>` : ''}</p>
-    <h2 class="carte__titre">${texteSimple(jour.titre, jour)}</h2>
-    ${jour.consigneVolume ? `<p class="carte__consigne">Consigne de volume : <strong>${esc(jour.consigneVolume)}</strong></p>` : ''}
-    ${jour.type === 'push' || jour.type === 'pull' ? '<p class="carte__objectif">Tu choisis tes exercices.</p>' : ''}
-    ${allureCle(jour)}
-    ${jour.objectif ? `<p class="carte__objectif"><span class="carte__etiquette">Objectif :</span> ${texteSimple(jour.objectif, jour)}</p>` : ''}
+    <div class="carte-seance__tete">
+      ${tuile(EMOJI_TYPE[jour.type], 'grande')}
+      <div class="carte-seance__titres">
+        <p class="carte__sur">${esc(TYPES[jour.type].libelle)}</p>
+        <h2 class="carte__titre">${texteSimple(jour.titre, jour)}</h2>
+      </div>
+    </div>
+    <div class="puces">${puces}</div>
+    ${muscu ? '<p class="carte__objectif">Tu choisis tes exercices.</p>' : ''}
+    ${jour.objectif ? `<p class="carte__objectif"><span class="visuellement-cache">Objectif : </span><span aria-hidden="true">🎯 </span>${texteSimple(maj1(jour.objectif), jour)}</p>` : ''}
     ${lignesSemaineCourse(jour)}
-    <div class="carte__pied">
-      ${pastille(statutJour(jour))}
-      <a class="bouton bouton--principal" href="#/seance/${jour.id}">Voir la séance</a>
+    <div class="carte__actions">
+      ${apercu ? '' : `<a class="bouton bouton--principal" href="#/seance/${jour.id}/saisie" data-action="marquer" data-id="${jour.id}">${etat.saisies[jour.id] ? 'Modifier ma saisie' : 'Saisir ma séance'}</a>`}
+      <a class="bouton${apercu ? ' bouton--principal' : ''}" href="#/seance/${jour.id}">Voir la séance</a>
     </div>
   </article>`;
 }
@@ -343,10 +452,15 @@ function carteSeance({ jour, semaine }, { apercu = false } = {}) {
 function carteRepos(vu) {
   const suivante = prochaineSeance(vu);
   return `<article class="carte carte-repos">
-    <h2 class="carte__titre">Repos</h2>
-    ${suivante ? `<p class="carte__apercu">Prochaine séance · ${esc(maj1(C.formatDateLongue(suivante.jour.date)))}</p>
-      <p class="carte__suivante"><span class="carte__etiquette">${esc(TYPES[suivante.jour.type].libelle)}</span> ${texteSimple(suivante.jour.titre, suivante.jour)}</p>
-      <div class="carte__pied">${pastille(statutJour(suivante.jour))}<a class="bouton" href="#/seance/${suivante.jour.id}">Voir la séance</a></div>` : ''}
+    <div class="carte-seance__tete">
+      ${tuile('🌙', 'grande')}
+      <div class="carte-seance__titres"><p class="carte__sur">Récupération</p><h2 class="carte__titre">Repos</h2></div>
+    </div>
+    ${suivante ? `<div class="suivante">
+      <p class="carte__apercu">Prochaine séance · ${esc(maj1(C.formatDateLongue(suivante.jour.date)))}</p>
+      <div class="suivante__ligne">${tuile(EMOJI_TYPE[suivante.jour.type])}<div><p class="carte__sur">${esc(TYPES[suivante.jour.type].libelle)}</p><p class="suivante__titre">${texteSimple(suivante.jour.titre, suivante.jour)}</p></div></div>
+      <div class="carte__actions"><a class="bouton" href="#/seance/${suivante.jour.id}">Voir la séance</a></div>
+    </div>` : ''}
   </article>`;
 }
 
@@ -360,7 +474,7 @@ function rappels(iso) {
 }
 
 function rappelsHtml(iso) {
-  return rappels(iso).map((t) => `<p class="rappel" role="note"><span class="rappel__signe" aria-hidden="true">!</span> ${esc(t)}</p>`).join('');
+  return rappels(iso).map((t) => `<p class="rappel" role="note"><span class="rappel__signe" aria-hidden="true">${t.startsWith('Zéro alcool ce soir') ? '🌙' : '🚫'}</span><span>${esc(t)}</span></p>`).join('');
 }
 
 function lignesDiscretes(auj) {
@@ -400,35 +514,34 @@ function ecranFin() {
   const s = etat.saisies['s11-ven'];
   const total = totalCourse(s);
   const obj = C.lireObjectif(objectifCourse());
+  const tete = `<div class="carte-seance__tete">${tuile('🏁', 'grande')}<div class="carte-seance__titres"><p class="carte__sur">Hyrox Paris · 18 décembre</p><h2 class="carte__titre">Programme terminé</h2></div></div>`;
   if (total == null) {
-    return `<article class="carte carte-fin">
-      <h2 class="carte__titre">Programme terminé</h2>
+    return `<article class="carte carte-fin">${tete}
       <p>Saisis ton résultat de course pour le comparer à Bordeaux (1:35:57) et à ton objectif (${esc(objectifCourse())}).</p>
-      <div class="carte__pied"><a class="bouton bouton--principal" href="#/seance/s11-ven/saisie">Saisir mon résultat</a></div>
+      <div class="carte__actions"><a class="bouton bouton--principal" href="#/seance/s11-ven/saisie">Saisir mon résultat</a></div>
     </article>`;
   }
   const eB = total - LIGNE_TEMPS.total.bordeaux;
   const eO = obj ? C.ecartObjectif(total, obj) : null;
-  return `<article class="carte carte-fin">
-    <h2 class="carte__titre">Hyrox Paris · résultat</h2>
+  return `<article class="carte carte-fin">${tete}
     <p class="grand-chiffre num">${ch(total)}</p>
-    <dl class="comparaison">
-      <div><dt>Bordeaux</dt><dd>${val('1:35:57')} → ${val(C.formatEcart(eB))}</dd></div>
-      ${eO != null ? `<div><dt>Objectif ${esc(objectifCourse())}</dt><dd>${eO === 0 ? 'dans l\'objectif ✓' : `${val(C.formatEcart(eO))} ${eO < 0 ? 'sous l\'objectif ✓' : 'au-dessus'}`}</dd></div>` : ''}
+    <dl class="stats">
+      <div><dt>${tuile('📍', 'petite')}Bordeaux 1:35:57</dt><dd>${val(C.formatEcart(eB))}</dd></div>
+      ${eO != null ? `<div><dt>${tuile('🎯', 'petite')}Objectif ${esc(objectifCourse())}</dt><dd>${eO === 0 ? 'atteint ✓' : `${val(C.formatEcart(eO))}${eO < 0 ? ' ✓' : ''}`}</dd></div>` : ''}
     </dl>
-    <div class="carte__pied"><a class="bouton" href="#/seance/s11-ven">Détail de la course</a></div>
+    <div class="carte__actions"><a class="bouton" href="#/seance/s11-ven">Détail de la course</a></div>
   </article>`;
 }
 
 function lignesSemaineCourse(jour, { titre = false } = {}) {
   const items = SEMAINE_COURSE.filter((it) => it.jour === jour.id);
   if (!items.length) return '';
-  return `<div class="encadre encadre--course">${titre ? '<h2>Semaine de course</h2>' : ''}<ul class="liste">${items.map((it) => `<li>${enrichir(it.texte, { jour })}</li>`).join('')}</ul></div>`;
+  return `<div class="encadre encadre--course">${titre ? `<h2>${tuile('🏁', 'petite')}Semaine de course</h2>` : ''}<ul class="liste-icones">${items.map((it) => `<li>${tuile(it.texte.startsWith('Jeu soir') ? '🌙' : '🏁', 'petite')}<span>${enrichir(it.texte, { jour })}</span></li>`).join('')}</ul></div>`;
 }
 
 // ---------- Détail d'une séance ----------
 function contexte(jour, semaine) {
-  return `<p class="seance__contexte">S${semaine.numero} · ${esc(C.formatDateLongue(jour.date))} · ${phaseBadge(semaine)}</p>`;
+  return `<p class="seance__contexte">S${semaine.numero} · ${esc(C.formatDateLongue(jour.date))}</p>`;
 }
 
 function lienRetourSeance() {
@@ -441,30 +554,62 @@ function lienRetour(defaut, libelle) {
   return `<a class="retour" href="${defaut}" data-action="retour">${ICONES.gauche}<span>${libelle}</span></a>`;
 }
 
+function sectionSeance(emoji, titre, html, classe = '') {
+  return `<section class="seance__bloc${classe ? ` ${classe}` : ''}"><h2>${tuile(emoji, 'petite')}${titre}</h2>${html}</section>`;
+}
+
+function corpsHtml(jour) {
+  return C.decouperCorps(jour.corps).map((p) => {
+    if (p.texte != null) return `<p class="texte">${enrichir(p.texte, { jour })}</p>`;
+    const plusieurs = p.groupes.filter((g) => g.etapes).length > 1;
+    const g0 = p.groupes[0];
+    const introCommune = plusieurs && g0.intro ? `<p class="circuit__intro">${enrichir(g0.intro, { jour })}</p>` : '';
+    const groupes = p.groupes.map((g, ig) => {
+      const sep = ig > 0 ? '<span class="visuellement-cache"> ; </span>' : '';
+      if (g.texte != null) {
+        return `${sep}<div class="consigne-ligne">${tuile(iconeEtape(g.texte), 'petite')}<span class="etape__texte">${enrichir(g.texte, { jour })}</span></div>`;
+      }
+      const intro = g.intro && !(plusieurs && ig === 0) ? `<p class="circuit__intro">${enrichir(g.intro, { jour })}</p>` : '';
+      return `${sep}<div class="circuit__groupe${plusieurs ? ' circuit__groupe--bloc' : ''}">
+        ${plusieurs ? `<span class="circuit__num" aria-hidden="true">${ig + 1}</span>` : ''}
+        ${intro}
+        <ol class="etapes">${g.etapes.map((e, ie) => `<li class="etape">${ie > 0 ? `<span class="visuellement-cache">${g.sep ?? ' → '}</span>` : ''}${tuile(iconeEtape(e))}<span class="etape__texte">${enrichir(e, { jour })}</span></li>`).join('')}</ol>
+      </div>`;
+    }).join('');
+    return `<div class="circuit">${introCommune}${groupes}</div>`;
+  }).join('');
+}
+
 function detailSeance(id, { pourListe = false } = {}) {
   const { jour, semaine } = PAR_ID.get(id);
   const s = etat.saisies[jour.id];
   const r = etat.reperes;
-  const blocs = [];
+  const hT = pourListe ? 'h2' : 'h1';
+  const entete = (titreHtml, puces) => `
+    ${pourListe ? '' : lienRetourSeance()}
+    <div class="seance__entete">
+      ${tuile(EMOJI_TYPE[jour.type], 'grande')}
+      <div><p class="seance__type">${esc(TYPES[jour.type].libelle)}</p>${contexte(jour, semaine)}</div>
+    </div>
+    <${hT} class="seance__titre">${titreHtml}</${hT}>
+    <div class="puces">${puces}</div>`;
+
   if (jour.type === 'repos') {
-    const rap = rappelsHtml(jour.date);
     const suivante = prochaineSeance(jour.date);
-    const hT = pourListe ? 'h2' : 'h1';
-    return `<article class="seance">
-      ${pourListe ? '' : lienRetourSeance()}
-      ${contexte(jour, semaine)}
-      <${hT} class="seance__titre">Repos</${hT}>
-      ${rap}
-      ${suivante ? `<p>Prochaine séance : <a href="#/seance/${suivante.jour.id}">${esc(C.formatDateLongue(suivante.jour.date))} · ${esc(TYPES[suivante.jour.type].libelle)} · ${texteSimple(suivante.jour.titre, suivante.jour)}</a></p>` : ''}
+    return `<article class="seance" data-phase="${semaine.phase}">
+      ${entete('Repos', phaseBadge(semaine))}
+      ${rappelsHtml(jour.date)}
+      ${suivante ? `<a class="lien-carte" href="#/seance/${suivante.jour.id}">${tuile(EMOJI_TYPE[suivante.jour.type])}<span><span class="carte__sur">Prochaine séance · ${esc(C.formatDateCourte(suivante.jour.date))}</span><span class="suivante__titre">${texteSimple(suivante.jour.titre, suivante.jour)}</span></span></a>` : ''}
     </article>`;
   }
-  const estMuscu = jour.type === 'push' || jour.type === 'pull';
-  if (estMuscu) {
-    if (jour.consigneVolume) blocs.push(`<p class="consigne-volume">Consigne de volume : <strong>${esc(jour.consigneVolume)}</strong></p>`);
+
+  const blocs = [];
+  if (jour.type === 'push' || jour.type === 'pull') {
+    if (jour.consigneVolume) blocs.push(`<p class="ligne-info">${tuile('📉', 'petite')}<span>Consigne de volume : <strong>${esc(jour.consigneVolume)}</strong></span></p>`);
     blocs.push('<p class="aide">Tu choisis tes exercices. Note ce que tu as fait dans la saisie.</p>');
     const prec = SEANCES.filter((x) => x.jour.type === jour.type && x.jour.date < jour.date && etat.saisies[x.jour.id]?.notes?.trim()).pop();
     if (prec) {
-      blocs.push(`<div class="encadre"><h2>Ta dernière séance ${esc(TYPES[jour.type].libelle)} · ${esc(C.formatDateCourte(etat.saisies[prec.jour.id].date ?? prec.jour.date))}</h2><p class="notes">${esc(etat.saisies[prec.jour.id].notes)}</p></div>`);
+      blocs.push(`<div class="encadre"><h2>${tuile('🗒️', 'petite')}Ta dernière séance ${esc(TYPES[jour.type].libelle)} · ${esc(C.formatDateCourte(etat.saisies[prec.jour.id].date ?? prec.jour.date))}</h2><p class="notes">${esc(etat.saisies[prec.jour.id].notes)}</p></div>`);
     }
   } else {
     const aj = jour.seuil ? etat.ajustements[jour.id] : null;
@@ -473,42 +618,37 @@ function detailSeance(id, { pourListe = false } = {}) {
         <button type="button" class="bouton bouton--discret" data-action="annuler-ajustement" data-id="${jour.id}">Revenir à l'allure prévue</button></div>`);
     }
     const efBpm = r.fcSeuil && jour.type === 'run2' && jour.id !== 's1-mer' && !jour.corps.includes('{ef}')
-      ? `<p class="repere-ef">EF : ${val(`FC < ${C.plafondEF(r.fcSeuil)} bpm`, true)} <span class="aide">(85 % de ta FC seuil)</span></p>` : '';
-    const section = (titre, html) => `<section class="seance__bloc"><h2>${titre}</h2>${html}</section>`;
-    blocs.push(section('Échauffement', `<p class="texte">${enrichir(maj1(jour.echauffement), { jour })}</p>`));
-    blocs.push(section('Corps', `${efBpm}<p class="texte">${enrichir(maj1(jour.corps), { jour })}</p>`));
-    blocs.push(section('Retour au calme', `<p class="texte">${enrichir(maj1(jour.retourCalme), { jour })}</p>`));
-    blocs.push(section('Durée', `<p class="texte num">${esc(jour.dureeTexte)}.</p>`));
+      ? `<p class="repere-ef">${puce('❤️', `EF : FC &lt; ${C.plafondEF(r.fcSeuil)} bpm`, 'puce--accent')} <span class="aide">85 % de ta FC seuil</span></p>` : '';
     const obj = objectifCourse();
     const noteObjectif = jour.type === 'course' && obj !== OBJECTIF_DEFAUT
       ? `<p class="encadre encadre--accent">Objectif en vigueur : ${val(obj, true)} (révisé après le retest de la semaine 9).</p>` : '';
-    blocs.push(section('Objectif', `<p class="texte">${enrichir(maj1(jour.objectif), { jour })}</p>${noteObjectif}`));
+    blocs.push(sectionSeance('🔥', 'Échauffement', `<p class="texte">${enrichir(jour.echauffement, { jour })}</p>`));
+    blocs.push(sectionSeance('📋', 'Corps', `${efBpm}${corpsHtml(jour)}`));
+    blocs.push(sectionSeance('🧘', 'Retour au calme', `<p class="texte">${enrichir(jour.retourCalme, { jour })}</p>`));
+    blocs.push(sectionSeance('⏱️', 'Durée', `<p class="texte num">${esc(jour.dureeTexte)}.</p>`, 'seance__bloc--compact'));
+    blocs.push(sectionSeance('🎯', 'Objectif', `<p class="texte">${enrichir(jour.objectif, { jour })}</p>${noteObjectif}`));
     const charges = STATIONS.filter((st) => jour.stations.includes(st.cle) && CHARGES[st.cle]);
     if (charges.length) {
-      blocs.push(`<div class="encadre"><h2>Charges Open men</h2><ul class="liste">${charges.map((st) => `<li>${esc(maj1(CHARGES[st.cle]))}${st.cle.startsWith('sled') ? ` ${esc(CHARGES_NOTE_SLED)}` : ''}</li>`).join('')}</ul></div>`);
+      blocs.push(`<div class="encadre"><h2>${tuile('🏋️', 'petite')}Charges Open men</h2><div class="puces">${charges.map((st) => puce(EMOJI_STATION[st.cle], `${esc(maj1(CHARGES[st.cle]))}${st.cle.startsWith('sled') ? ` ${esc(CHARGES_NOTE_SLED)}` : ''}`)).join('')}</div></div>`);
     }
     if (jour.duree > 60) {
-      blocs.push('<p class="encadre encadre--eau"><span aria-hidden="true">💧</span> Dans toute séance de plus de 60 min, bois 500 à 750 ml par heure avec électrolytes, en petites gorgées dès le début.</p>');
+      blocs.push(`<p class="ligne-info">${tuile('💧', 'petite')}<span>Dans toute séance de plus de 60 min, bois 500 à 750 ml par heure avec électrolytes, en petites gorgées dès le début.</span></p>`);
     }
   }
   blocs.push(lignesSemaineCourse(jour, { titre: true }));
   if (jour.type === 'hyrox') {
-    blocs.push(`<div class="encadre"><h2>Consignes permanentes</h2>${rendreBlocs(SECTION.consignes.blocs)}</div>`);
+    const icones = { transitions: '⏱️', 'series-WB': EMOJI_STATION.wb, 'charges-seance': '🏋️' };
+    blocs.push(`<div class="encadre"><h2>${tuile('📌', 'petite')}Consignes permanentes</h2><ul class="liste-icones">${SECTION.consignes.blocs[0].items.map((it) => `<li>${tuile(icones[it.id] ?? '▸', 'petite')}<span>${enrichir(it.texte)}</span></li>`).join('')}</ul></div>`);
   }
   if (s) blocs.push(resumeSaisie(jour, s));
 
-  const libelle = s ? 'Modifier la saisie' : 'Marquer comme faite';
-  const hT = pourListe ? 'h2' : 'h1';
+  const puces = [jour.dureeTexte ? puce('⏱️', `<span class="num">${esc(jour.dureeTexte)}</span>`) : '', phaseBadge(semaine), pastille(statutJour(jour))].join('');
   return `<article class="seance" data-phase="${semaine.phase}">
-    ${pourListe ? '' : lienRetourSeance()}
-    ${contexte(jour, semaine)}
-    <p class="seance__type">${esc(TYPES[jour.type].libelle)}</p>
-    <${hT} class="seance__titre">${enrichir(jour.titre, { jour })}</${hT}>
-    <p class="seance__meta">${jour.dureeTexte ? `<span class="num">${esc(jour.dureeTexte)}</span>` : ''}${pastille(statutJour(jour))}</p>
+    ${entete(enrichir(jour.titre, { jour }), puces)}
     ${blocs.join('')}
   </article>
   <div class="barre-action barre-fixe">
-    <a class="bouton bouton--principal bouton--large" href="#/seance/${jour.id}/saisie" data-action="marquer" data-id="${jour.id}">${libelle}</a>
+    <a class="bouton bouton--principal bouton--large" href="#/seance/${jour.id}/saisie" data-action="marquer" data-id="${jour.id}">${s ? 'Modifier la saisie' : 'Marquer comme faite'}</a>
   </div>`;
 }
 
@@ -521,43 +661,48 @@ const STATUTS = { faite: 'Faite', modifiee: 'Faite avec modifications', sautee: 
 
 function resumeSaisie(jour, s) {
   const d = s.details ?? {};
-  const li = [];
-  li.push(`<li>${pastille(s.statut)} ${s.date && s.date !== jour.date ? `le ${esc(C.formatDateLongue(s.date))}` : ''}</li>`);
-  const mesures = [s.rpe ? `RPE ${s.rpe}` : null, s.duree ? `${s.duree} min` : null, s.fc ? `FC ${s.fc} bpm` : null].filter(Boolean);
-  if (mesures.length && s.statut !== 'sautee') li.push(`<li class="num">${mesures.join(' · ')}</li>`);
+  const lignes = [];
+  const ligne = (emoji, libelle, valeur) => lignes.push(`<div><dt>${tuile(emoji, 'petite')}${libelle}</dt><dd>${valeur}</dd></div>`);
+  ligne('📌', 'Statut', pastille(s.statut));
+  if (s.date && s.date !== jour.date) ligne('📅', 'Faite le', esc(C.formatDateCourte(s.date)));
+  if (s.statut !== 'sautee') {
+    if (s.rpe) ligne('🔥', 'Effort (RPE)', `<span class="num">${s.rpe}/10</span>`);
+    if (s.duree) ligne('⏱️', 'Durée', `<span class="num">${s.duree} min</span>`);
+    if (s.fc) ligne('❤️', 'FC moyenne', `<span class="num">${s.fc} bpm</span>`);
+  }
   switch (jour.formulaire) {
     case 'test30':
-      if (d.allure20 != null || d.distance != null) li.push(`<li class="num">${[d.distance ? `${d.distance} m` : null, d.allure20 != null ? `${ch(d.allure20)}/km sur les 20 dernières minutes` : null, d.fc20 ? `FC ${d.fc20} bpm` : null].filter(Boolean).join(' · ')}</li>`);
+      if (d.distance) ligne('📏', 'Distance', `<span class="num">${d.distance} m</span>`);
+      if (d.allure20 != null) ligne('⚡', 'Allure, 20 dernières min', `<span class="num">${ch(d.allure20)}/km</span>`);
+      if (d.fc20) ligne('❤️', 'FC, 20 dernières min', `<span class="num">${d.fc20} bpm</span>`);
       break;
     case 'testWB':
-      if (d.maxWB) li.push(`<li class="num">Max ${d.maxWB} d'affilée → S = ${d.S ?? C.tailleSerie(d.maxWB)}</li>`);
+      if (d.maxWB) ligne(EMOJI_STATION.wb, "Max d'affilée", `<span class="num">${d.maxWB} → S = ${d.S ?? C.tailleSerie(d.maxWB)}</span>`);
       break;
     case 'seuil': {
       const reps = (d.reps ?? []).filter((x) => x != null);
-      if (reps.length) li.push(`<li class="num">Répétitions : ${reps.map(ch).join(' · ')}</li>`);
-      if (d.verdict) li.push(`<li>${esc(VERDICTS[d.verdict])}</li>`);
+      if (reps.length) ligne('⚡', 'Répétitions', `<span class="num">${reps.map(ch).join(' · ')}</span>`);
+      if (d.verdict) ligne('📈', 'Fin de séance', esc(VERDICTS[d.verdict]));
       break;
     }
     case 'moitie': case 'retest': {
-      const segs = DEUXIEME_MOITIE.segments.map((x) => d.segments?.[x.cle] ?? null);
-      const t = C.sommeSegments(segs);
-      if (t.renseignes) li.push(`<li class="num">Total hors transitions : ${ch(t.total)}${t.complet ? '' : ` (${t.renseignes}/8 segments)`}</li>`);
+      const t = C.sommeSegments(DEUXIEME_MOITIE.segments.map((x) => d.segments?.[x.cle] ?? null));
+      if (t.renseignes) ligne('⏱️', 'Total hors transitions', `<span class="num">${ch(t.total)}${t.complet ? '' : ` (${t.renseignes}/8)`}</span>`);
       break;
     }
     case 'simulation': case 'course': {
       const t = jour.formulaire === 'course' ? totalCourse(s) : (d.total ?? sommeSimulation(d).total);
-      if (t) li.push(`<li class="num">Total : ${ch(t)}</li>`);
+      if (t) ligne('🏁', 'Total', `<span class="num">${ch(t)}</span>`);
       break;
     }
     case 'hyrox': {
       const tours = (d.tours ?? []).filter((x) => x != null);
-      if (tours.length) li.push(`<li class="num">Tours : ${tours.map(ch).join(' · ')}</li>`);
+      if (tours.length) ligne('🔁', 'Tours', `<span class="num">${tours.map(ch).join(' · ')}</span>`);
       break;
     }
     default:
   }
-  if (s.notes?.trim()) li.push(`<li class="notes">${esc(s.notes)}</li>`);
-  return `<section class="encadre encadre--saisie"><h2>Ta saisie</h2><ul class="liste-simple">${li.join('')}</ul></section>`;
+  return `<section class="encadre encadre--saisie"><h2>${tuile('📝', 'petite')}Ta saisie</h2><dl class="stats">${lignes.join('')}</dl>${s.notes?.trim() ? `<p class="notes">${esc(s.notes)}</p>` : ''}</section>`;
 }
 
 function sommeSimulation(d) {
@@ -604,10 +749,10 @@ function champ({ label, chemin, valeur, format = 'texte', aide = '', placeholder
   </div>`;
 }
 
-function radios({ legend, nom, chemin, options, valeur, classe = '', format = 'texte', attr = 'champ' }) {
+function radios({ legend, nom, chemin, options, valeur, classe = '', format = 'texte', attr = 'champ', classeOption = null }) {
   return `<fieldset class="groupe ${classe}">
     <legend>${legend}</legend>
-    <div class="choix">${options.map(([v, libelle]) => `<label class="choix__option"><input type="radio" id="${nom}-${esc(v)}" name="${nom}" value="${esc(v)}" data-${attr}="${chemin}" data-format="${format}"${String(valeur) === String(v) ? ' checked' : ''}><span>${libelle}</span></label>`).join('')}</div>
+    <div class="choix">${options.map(([v, libelle]) => `<label class="choix__option${classeOption ? ` ${classeOption(v)}` : ''}"><input type="radio" id="${nom}-${esc(v)}" name="${nom}" value="${esc(v)}" data-${attr}="${chemin}" data-format="${format}"${String(valeur) === String(v) ? ' checked' : ''}><span>${libelle}</span></label>`).join('')}</div>
   </fieldset>`;
 }
 
@@ -620,34 +765,47 @@ function vueSaisie(id) {
   const nouvelle = !etat.saisies[id];
   const s = assurerSaisie(id);
   if (nouvelle) sauver();
-  const saute = s.statut === 'sautee';
+  const cache = s.statut === 'sautee' ? ' hidden' : '';
+  const muscu = jour.type === 'push' || jour.type === 'pull';
   const specifique = formulaireSpecifique(jour, s);
-  const form = `<form class="saisie" data-id="${id}" novalidate>
+  const niveauRpe = (v) => `choix__option--rpe${v <= 3 ? 1 : v <= 6 ? 2 : v <= 8 ? 3 : 4}`;
+  return `<form class="saisie" data-id="${id}" novalidate>
     ${lienRetour(`#/seance/${id}`, 'Séance')}
-    ${contexte(jour, semaine)}
-    <h1 class="seance__titre"><span class="seance__type">Saisie · ${esc(TYPES[jour.type].libelle)}</span> ${texteSimple(jour.titre, jour)}</h1>
-    <p id="enregistre" class="enregistre" role="status">Enregistrement automatique à chaque modification</p>
-    ${radios({ legend: 'Statut', nom: 'statut', chemin: 'statut', options: Object.entries(STATUTS), valeur: s.statut, classe: 'groupe--statut' })}
-    <div class="saisie__realisee"${saute ? ' hidden' : ''}>
-      <fieldset class="groupe"><legend>Date réelle</legend>${zone('date', id, 'date')}</fieldset>
-      ${radios({ legend: 'RPE (effort ressenti, 1 à 10)', nom: 'rpe', chemin: 'rpe', options: Array.from({ length: 10 }, (_, i) => [i + 1, String(i + 1)]), valeur: s.rpe, classe: 'groupe--rpe', format: 'nombre' })}
-      <div class="ligne-champs">
-        ${champ({ label: 'Durée réelle (min)', chemin: 'duree', valeur: s.duree, format: 'entier', placeholder: jour.duree ? `≈ ${jour.duree}` : '' })}
-        ${champ({ label: 'FC moyenne (bpm)', chemin: 'fc', valeur: s.fc, format: 'entier', placeholder: 'facultatif' })}
-      </div>
-      ${jour.duree ? `<button type="button" class="lien" data-action="duree-prevue">Durée prévue : ${jour.duree} min</button>` : ''}
-      ${specifique}
+    <div class="seance__entete">
+      ${tuile(EMOJI_TYPE[jour.type], 'grande')}
+      <div><p class="seance__type">Saisie · ${esc(TYPES[jour.type].libelle)}</p>${contexte(jour, semaine)}</div>
     </div>
-    <div class="champ">
-      <label for="c-notes">Notes</label>
-      <textarea id="c-notes" data-champ="notes" data-format="texte" rows="${jour.type === 'push' || jour.type === 'pull' ? 6 : 4}" placeholder="${jour.type === 'push' || jour.type === 'pull' ? 'Exercices, séries, charges…' : 'Sensations, conditions, ce qui a changé…'}">${esc(s.notes)}</textarea>
+    <h1 class="seance__titre">${texteSimple(jour.titre, jour)}</h1>
+    <p id="enregistre" class="enregistre" role="status">💾 Enregistrement automatique à chaque modification</p>
+    <div class="carte">
+      ${radios({ legend: 'Statut', nom: 'statut', chemin: 'statut', options: Object.entries(STATUTS), valeur: s.statut, classe: 'groupe--statut' })}
+      <div class="saisie__realisee"${cache}>
+        <fieldset class="groupe groupe--dernier"><legend>Date réelle</legend>${zone('date', id, 'date')}</fieldset>
+      </div>
+    </div>
+    <div class="saisie__realisee"${cache}>
+      <div class="carte">
+        ${radios({ legend: 'Effort ressenti (RPE)', nom: 'rpe', chemin: 'rpe', options: Array.from({ length: 10 }, (_, i) => [i + 1, String(i + 1)]), valeur: s.rpe, classe: 'groupe--rpe', format: 'nombre', classeOption: niveauRpe })}
+        <p class="echelle-rpe" aria-hidden="true"><span>1 · très facile</span><span>10 · maximal</span></p>
+        <div class="ligne-champs">
+          ${champ({ label: 'Durée réelle (min)', chemin: 'duree', valeur: s.duree, format: 'entier', placeholder: jour.duree ? `≈ ${jour.duree}` : '' })}
+          ${champ({ label: 'FC moyenne (bpm)', chemin: 'fc', valeur: s.fc, format: 'entier', placeholder: 'facultatif' })}
+        </div>
+        ${jour.duree ? `<button type="button" class="lien" data-action="duree-prevue">Durée prévue : ${jour.duree} min</button>` : ''}
+      </div>
+      ${specifique ? `<div class="carte carte--specifique">${specifique}</div>` : ''}
+    </div>
+    <div class="carte">
+      <div class="champ champ--dernier">
+        <label for="c-notes">Notes</label>
+        <textarea id="c-notes" data-champ="notes" data-format="texte" rows="${muscu ? 6 : 4}" placeholder="${muscu ? 'Exercices, séries, charges…' : 'Sensations, conditions, ce qui a changé…'}">${esc(s.notes)}</textarea>
+      </div>
     </div>
     ${zone('effacer', id, '')}
   </form>
   <div class="barre-action barre-fixe">
     <button type="button" class="bouton bouton--principal bouton--large" data-action="termine" data-id="${id}">Terminé</button>
   </div>`;
-  return form;
 }
 
 function formulaireSpecifique(jour, s) {
@@ -1001,8 +1159,10 @@ function listeProgramme(selection, { titre = 'h1' } = {}) {
   if (!semainesOuvertes) semainesOuvertes = new Set([courante]);
   if (selection) semainesOuvertes.add(PAR_ID.get(selection).semaine.numero);
   const auj = aujourdhui();
+  const legende = `<p class="legende" aria-hidden="true">${Object.keys(PASTILLES).map((k) => `<span>${signeStatut(k, true)}${PASTILLES[k][1]}</span>`).join('')}</p>`;
   return `<${titre} class="titre-ecran">Programme</${titre}>
-    ${repliable("Vue d'ensemble", rendreBlocs(SECTION['vue-ensemble'].blocs), { id: 'vue-ensemble' })}
+    ${repliable("Vue d'ensemble", rendreBlocs(SECTION['vue-ensemble'].blocs), { id: 'vue-ensemble', emoji: '🗺️' })}
+    ${legende}
     <ol class="semaines">${SEMAINES.map((s) => {
       const seances = s.jours.filter((j) => j.type !== 'repos');
       const faites = seances.filter((j) => FAIT.includes(etat.saisies[j.id]?.statut)).length;
@@ -1015,13 +1175,16 @@ function listeProgramme(selection, { titre = 'h1' } = {}) {
             ${s.numero === courante ? '<span class="etiquette">en cours</span>' : ''}
           </span>
           <span class="semaine__objectif">${esc(s.objectif)}</span>
-          <span class="progression"><span class="barre" role="img" aria-label="${faites} séances faites sur ${seances.length}"><span style="width:${Math.round((faites / seances.length) * 100)}%"></span></span><span class="num">${faites}/${seances.length}</span></span>
+          <span class="semaine__points" role="img" aria-label="${faites} séances faites sur ${seances.length}">${seances.map((j) => `<span class="point point--${statutJour(j)}"></span>`).join('')}<span class="semaine__compte num">${faites}/${seances.length}</span></span>
         </summary>
         ${s.note ? `<p class="semaine__note">${esc(s.note)}</p>` : ''}
         <ul class="jours">${s.jours.map((j) => `<li><a class="jour${j.type === 'repos' ? ' jour--repos' : ''}${j.id === selection ? ' jour--selection' : ''}${j.date === auj ? ' jour--aujourdhui' : ''}" href="#/seance/${j.id}"${j.id === selection ? ' aria-current="page"' : ''}>
-          <span class="jour__date">${esc(C.formatDateCourte(j.date).replace(/ \S+$/, ''))}${j.date === auj ? '<small>aujourd\'hui</small>' : ''}</span>
-          <span class="jour__corps"><span class="jour__type">${esc(TYPES[j.type].libelle)}</span>${j.type !== 'repos' ? `<span class="jour__titre">${esc(titreCourt(j, s))}</span>` : ''}</span>
-          ${pastille(statutJour(j))}
+          ${tuile(EMOJI_TYPE[j.type], 'petite')}
+          <span class="jour__corps">
+            <span class="jour__date">${esc(C.formatDateCourte(j.date).replace(/ \S+$/, ''))} · ${esc(TYPES[j.type].libelle)}${j.date === auj ? ' <span class="etiquette">aujourd\'hui</span>' : ''}</span>
+            ${j.type !== 'repos' ? `<span class="jour__titre">${esc(titreCourt(j, s))}</span>` : ''}
+          </span>
+          ${signeStatut(statutJour(j))}
         </a></li>`).join('')}</ul>
       </details></li>`;
     }).join('')}</ol>`;
@@ -1064,20 +1227,20 @@ function vueReperes() {
   const optionsObj = [['1h25', '1h25'], ['1h27', '1h27'], ['1h29-1h30', '1h29-1h30']];
   const autre = !optionsObj.some(([v]) => v === obj);
   const sections = [
-    ['Objectif et temps cibles', 'objectif'],
-    ['Tests', 'tests'],
-    ['Standards', 'standards'],
-    ['Blocs jambes (dans les séances Hyrox)', 'jambes'],
-    ['Consignes permanentes en séance Hyrox', 'consignes'],
-    ['Hydratation, sommeil, alcool', 'hydratation'],
-    ['Partie 1 — Diagnostic', 'diagnostic'],
-    ['Partie 4 — Semaine de course', 'semaine-course'],
-    ['Sources', 'sources'],
+    ['Objectif et temps cibles', 'objectif', '🎯'],
+    ['Tests', 'tests', '🧪'],
+    ['Standards', 'standards', '📏'],
+    ['Blocs jambes (dans les séances Hyrox)', 'jambes', '🦵'],
+    ['Consignes permanentes en séance Hyrox', 'consignes', '📌'],
+    ['Hydratation, sommeil, alcool', 'hydratation', '💧'],
+    ['Partie 1 — Diagnostic', 'diagnostic', '🔎'],
+    ['Partie 4 — Semaine de course', 'semaine-course', '🏁'],
+    ['Sources', 'sources', '🔗'],
   ];
   const allures = SECTION.allures;
   return `<h1 class="titre-ecran">Repères</h1>
     <section class="carte" aria-labelledby="t-mes-reperes">
-      <h2 id="t-mes-reperes">Mes repères</h2>
+      <h2 id="t-mes-reperes">${tuile('🎛️', 'petite')}Mes repères</h2>
       <div class="grille-champs">
         ${champ({ label: 'Allure seuil (m:ss/km)', chemin: 'seuil', valeur: r.seuil, format: 'chrono', attr: 'repere', placeholder: '4:57', aide: '4:57 par défaut · fixée par le test 30 min (S2)' })}
         ${champ({ label: 'FC seuil (bpm)', chemin: 'fcSeuil', valeur: r.fcSeuil, format: 'entier', attr: 'repere', aide: 'Vide par défaut · test 30 min (S2)' })}
@@ -1093,16 +1256,16 @@ function vueReperes() {
       <div data-zone="objectif-info" data-id="" data-deps="reperes.objectif">${ZONES['objectif-info']()}</div>
     </section>
     <section class="carte" aria-labelledby="t-allures">
-      <h2 id="t-allures">Allures</h2>
+      <h2 id="t-allures">${tuile('⚡', 'petite')}Allures</h2>
       ${paragraphe(allures.blocs[0].texte)}
       <div data-zone="tableau-allures" data-id="" data-deps="reperes">${ZONES['tableau-allures']()}</div>
       ${rendreBlocs(allures.blocs.filter((b) => b.type === 'ul'))}
     </section>
     <section class="carte" id="sauvegarde" aria-labelledby="t-sauvegarde">
-      <h2 id="t-sauvegarde">Sauvegarde</h2>
+      <h2 id="t-sauvegarde">${tuile('💾', 'petite')}Sauvegarde</h2>
       <div data-zone="sauvegarde" data-id="" data-deps="sauvegarde">${htmlSauvegarde()}</div>
     </section>
-    ${sections.map(([titre, id]) => repliable(titre, rendreBlocs(SECTION[id].blocs), { id: `ref-${id}` })).join('')}`;
+    ${sections.map(([titre, id, emoji]) => repliable(titre, rendreBlocs(SECTION[id].blocs), { id: `ref-${id}`, emoji })).join('')}`;
 }
 
 function htmlSauvegarde() {
@@ -1196,85 +1359,82 @@ function vueSuivi() {
   const modifiees = saisies.filter(([, s]) => s.statut === 'modifiee').length;
   const sautees = saisies.filter(([, s]) => s.statut === 'sautee').length;
   const nonRens = SEANCES.filter(({ jour }) => jour.date < auj && !etat.saisies[jour.id]).length;
-  const pct = prevues ? Math.min(100, Math.round((faites / prevues) * 100)) : 0;
-
   const parSemaine = SEMAINES.map((s) => {
     const seances = s.jours.filter((j) => j.type !== 'repos');
     const f = seances.filter((j) => FAIT.includes(etat.saisies[j.id]?.statut)).length;
-    const rpes = seances.map((j) => etat.saisies[j.id]).filter((x) => x && x.statut !== 'sautee' && x.rpe).map((x) => x.rpe);
-    const rpe = C.moyenne(rpes);
-    return { s, f, n: seances.length, rpe, commence: s.debut <= auj };
+    const rpe = C.moyenne(seances.map((j) => etat.saisies[j.id]).filter((x) => x && x.statut !== 'sautee' && x.rpe).map((x) => x.rpe));
+    return { s, f, n: seances.length, rpe };
   });
-
+  const aucunRpe = parSemaine.every((x) => x.rpe == null);
   const t30 = etat.saisies['s2-lun']?.details ?? {};
   const r = etat.reperes;
   const journal = saisies
     .map(([id, s]) => ({ id, s, ...PAR_ID.get(id) }))
     .filter((x) => x.jour)
     .sort((a, b) => (b.s.date ?? b.jour.date).localeCompare(a.s.date ?? a.jour.date) || b.jour.date.localeCompare(a.jour.date));
+  const mini = (statut, n, mot) => `<span>${signeStatut(statut, true)}${n} ${mot}${n > 1 ? 's' : ''}</span>`;
+  const t30Texte = [t30.distance ? `${t30.distance} m` : null, t30.allure20 != null ? `${ch(t30.allure20)}/km` : null, t30.fc20 ? `FC ${t30.fc20}` : null].filter(Boolean).join(' · ');
 
   return `<h1 class="titre-ecran">Suivi</h1>
-    <section class="carte" aria-labelledby="t-faites">
-      <h2 id="t-faites">Séances faites</h2>
-      <p class="grand-chiffre num">${faites}<small> / ${prevues} prévues depuis le début</small></p>
-      <div class="barre barre--grande" role="img" aria-label="${faites} séances faites sur ${prevues} prévues"><span style="width:${pct}%"></span></div>
-      <p class="aide">${[modifiees ? `dont ${modifiees} modifiée${modifiees > 1 ? 's' : ''}` : null, sautees ? `${sautees} sautée${sautees > 1 ? 's' : ''}` : null, nonRens ? `${nonRens} non renseignée${nonRens > 1 ? 's' : ''}` : null].filter(Boolean).join(' · ') || 'Programme sur 55 séances.'}</p>
+    <section class="carte suivi-tete" aria-labelledby="t-faites">
+      ${anneau(prevues ? faites / prevues : 0, `<b>${faites}</b><small>sur ${prevues}</small>`, `${faites} séances faites sur ${prevues} prévues depuis le début`)}
+      <div class="suivi-tete__texte">
+        <h2 id="t-faites">Séances faites</h2>
+        <p class="aide">${faites} sur ${prevues} prévues depuis le début · 55 au total</p>
+        <p class="mini-stats">${mini('modifiee', modifiees, 'modifiée')}${mini('sautee', sautees, 'sautée')}${mini('a-faire', nonRens, 'non renseignée')}</p>
+      </div>
     </section>
     <section class="carte" aria-labelledby="t-semaines">
-      <h2 id="t-semaines">Par semaine</h2>
-      <ol class="graphe-semaines">
-        ${parSemaine.map(({ s, f, n, rpe, commence }) => `<li data-phase="${s.phase}"${commence ? '' : ' class="a-venir"'}>
-          <span class="graphe-semaines__nom">S${s.numero}</span>
-          <span class="barre" role="img" aria-label="Semaine ${s.numero} : ${f} séances faites sur ${n}"><span style="width:${Math.round((f / n) * 100)}%"></span></span>
-          <span class="num graphe-semaines__val">${f}/${n}</span>
-          <span class="graphe-semaines__rpe num" aria-label="RPE moyen">${rpe != null ? `RPE ${nombreFr(rpe)}` : '–'}</span>
-        </li>`).join('')}
-      </ol>
+      <h2 id="t-semaines">${tuile('📅', 'petite')}Séances faites par semaine</h2>
+      ${grapheColonnes(parSemaine.map(({ s, f, n }) => ({ etiquette: `S${s.numero}`, valeur: f, max: n, texte: `${f}/${n}`, phase: s.phase, titre: `Semaine ${s.numero} : ${f} séances faites sur ${n}` })), 'Séances faites par semaine')}
     </section>
     <section class="carte" aria-labelledby="t-rpe">
-      <h2 id="t-rpe">RPE moyen par semaine</h2>
-      ${grapheRpe(parSemaine)}
+      <h2 id="t-rpe">${tuile('🔥', 'petite')}RPE moyen par semaine</h2>
+      ${grapheColonnes(parSemaine.map(({ s, rpe }) => ({ etiquette: `S${s.numero}`, valeur: rpe, max: 10, texte: rpe != null ? nombreFr(rpe) : '', phase: s.phase, titre: `Semaine ${s.numero} : ${rpe != null ? `RPE moyen ${nombreFr(rpe)}` : 'pas de RPE noté'}` })), 'RPE moyen par semaine')}
+      ${aucunRpe ? '<p class="aide">Le RPE moyen apparaît dès que tu notes ton effort dans une saisie.</p>' : ''}
     </section>
     <section class="carte" aria-labelledby="t-tests">
-      <h2 id="t-tests">Tests</h2>
-      <dl class="comparaison">
-        <div><dt>Test 30 min (S2)</dt><dd>${t30.allure20 != null || t30.distance ? [t30.distance ? `${t30.distance} m` : null, t30.allure20 != null ? `${ch(t30.allure20)}/km` : null, t30.fc20 ? `FC ${t30.fc20} bpm` : null].filter(Boolean).map((x) => val(x)).join(' · ') : '<span class="aide">non renseigné</span>'}</dd></div>
-        <div><dt>Repères en vigueur</dt><dd>seuil ${val(C.formatMinSec(r.seuil) + '/km', true)}${r.fcSeuil ? ` · FC seuil ${val(r.fcSeuil + ' bpm', true)}` : ''}</dd></div>
-        <div><dt>Taille de série</dt><dd>${val(`S = ${r.S}`, true)}${r.maxWB ? ` (max ${r.maxWB})` : ' (valeur par défaut)'}</dd></div>
-        <div><dt>Objectif de course</dt><dd>${val(objectifCourse(), objectifCourse() !== OBJECTIF_DEFAUT)}${r.objectifSource === 'retest' ? ' (révisé après le retest)' : r.objectifSource === 'manuel' ? ' (réglé à la main)' : ''}</dd></div>
+      <h2 id="t-tests">${tuile('🧪', 'petite')}Tests et repères</h2>
+      <dl class="stats">
+        <div><dt>${tuile('🏃', 'petite')}Test 30 min (S2)</dt><dd>${t30Texte ? `<span class="num">${esc(t30Texte)}</span>` : '<span class="aide">non renseigné</span>'}</dd></div>
+        <div><dt>${tuile('⚡', 'petite')}Allure seuil</dt><dd>${val(C.formatMinSec(r.seuil) + '/km', true)}</dd></div>
+        <div><dt>${tuile('❤️', 'petite')}FC seuil</dt><dd>${r.fcSeuil ? val(`${r.fcSeuil} bpm`, true) : '<span class="aide">à fixer</span>'}</dd></div>
+        <div><dt>${tuile(EMOJI_STATION.wb, 'petite')}Taille de série</dt><dd>${val(`S = ${r.S}`, true)}${r.maxWB ? ` <span class="aide">max ${r.maxWB}</span>` : ''}</dd></div>
+        <div><dt>${tuile('🎯', 'petite')}Objectif de course</dt><dd>${val(objectifCourse(), objectifCourse() !== OBJECTIF_DEFAUT)}${r.objectifSource === 'retest' ? ' <span class="aide">révisé</span>' : r.objectifSource === 'manuel' ? ' <span class="aide">à la main</span>' : ''}</dd></div>
       </dl>
       ${comparaisonMoities()}
     </section>
     <section class="carte" aria-labelledby="t-journal">
-      <h2 id="t-journal">Journal</h2>
+      <h2 id="t-journal">${tuile('📝', 'petite')}Journal</h2>
       ${journal.length ? `<ol class="journal">${journal.map(({ id, s, jour, semaine }) => `<li>
         <a href="#/seance/${id}">
-          <span class="journal__tete"><span class="num">${esc(maj1(C.formatDateCourte(s.date ?? jour.date)))}</span> · S${semaine.numero} · ${esc(TYPES[jour.type].libelle)}</span>
-          <span class="journal__titre">${texteSimple(jour.titre, jour)}</span>
-          <span class="journal__meta">${pastille(s.statut)}${s.rpe && s.statut !== 'sautee' ? ` <span class="num">RPE ${s.rpe}</span>` : ''}${s.duree && s.statut !== 'sautee' ? ` <span class="num">· ${s.duree} min</span>` : ''}</span>
-          ${s.notes?.trim() ? `<span class="notes">${esc(s.notes)}</span>` : ''}
+          ${tuile(EMOJI_TYPE[jour.type])}
+          <span class="journal__corps">
+            <span class="journal__tete"><span class="num">${esc(maj1(C.formatDateCourte(s.date ?? jour.date)))}</span> · S${semaine.numero} · ${esc(TYPES[jour.type].libelle)}</span>
+            <span class="journal__titre">${texteSimple(jour.titre, jour)}</span>
+            <span class="journal__meta">${pastille(s.statut)}${s.rpe && s.statut !== 'sautee' ? ` <span class="num">RPE ${s.rpe}</span>` : ''}${s.duree && s.statut !== 'sautee' ? ` <span class="num">· ${s.duree} min</span>` : ''}</span>
+            ${s.notes?.trim() ? `<span class="notes">${esc(s.notes)}</span>` : ''}
+          </span>
         </a></li>`).join('')}</ol>` : '<p class="aide">Aucune séance renseignée pour l\'instant.</p>'}
     </section>`;
 }
 
-function grapheRpe(parSemaine) {
-  const L = 320, H = 140, mg = 24, bas = H - 22;
-  const pas = (L - mg) / parSemaine.length;
-  const barres = parSemaine.map(({ s, rpe }, i) => {
-    const x = mg + i * pas + pas * 0.18;
-    const w = pas * 0.64;
-    const h = rpe != null ? ((bas - 8) * rpe) / 10 : 0;
-    return `${rpe != null ? `<rect x="${x.toFixed(1)}" y="${(bas - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="3" class="rpe-barre" data-phase="${s.phase}"><title>Semaine ${s.numero} : RPE moyen ${nombreFr(rpe)}</title></rect>
-      <text x="${(x + w / 2).toFixed(1)}" y="${(bas - h - 4).toFixed(1)}" class="rpe-val" text-anchor="middle">${nombreFr(rpe)}</text>` : ''}
-      <text x="${(x + w / 2).toFixed(1)}" y="${H - 6}" class="rpe-axe" text-anchor="middle">S${s.numero}</text>`;
+function grapheColonnes(items, libelle) {
+  const L = 330, H = 150, bas = 122, haut = 24;
+  const pas = L / items.length;
+  const w = Math.min(22, pas * 0.64);
+  const colonnes = items.map((it, i) => {
+    const x = i * pas + (pas - w) / 2;
+    const h = it.valeur ? Math.max(w, ((bas - haut) * it.valeur) / it.max) : 0;
+    return `<g>
+      <rect x="${x.toFixed(1)}" y="${haut}" width="${w.toFixed(1)}" height="${bas - haut}" rx="${(w / 2).toFixed(1)}" class="col-fond"/>
+      ${h > 0 ? `<rect x="${x.toFixed(1)}" y="${(bas - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w / 2).toFixed(1)}" class="col-barre" data-phase="${it.phase}"/>` : ''}
+      ${it.texte && it.valeur ? `<text x="${(x + w / 2).toFixed(1)}" y="${(haut - 8).toFixed(1)}" text-anchor="middle" class="col-val">${esc(it.texte)}</text>` : ''}
+      <text x="${(x + w / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" class="col-axe">${esc(it.etiquette)}</text>
+    </g>`;
   }).join('');
-  const grille = [0, 5, 10].map((v) => {
-    const y = bas - ((bas - 8) * v) / 10;
-    return `<line x1="${mg}" x2="${L}" y1="${y}" y2="${y}" class="rpe-grille"/><text x="${mg - 6}" y="${y + 4}" class="rpe-axe" text-anchor="end">${v}</text>`;
-  }).join('');
-  const aucune = parSemaine.every((x) => x.rpe == null);
-  return `<svg class="graphe-rpe" viewBox="0 0 ${L} ${H}" role="img" aria-label="RPE moyen par semaine${aucune ? ' : aucune donnée' : ''}">${grille}${barres}</svg>
-    ${aucune ? '<p class="aide">Le RPE moyen apparaît dès que tu notes ton effort dans une saisie.</p>' : ''}`;
+  return `<svg class="graphe-colonnes" viewBox="0 0 ${L} ${H}" role="img" aria-label="${esc(libelle)}">${colonnes}</svg>
+    <ul class="visuellement-cache">${items.map((it) => `<li>${esc(it.titre)}</li>`).join('')}</ul>`;
 }
 
 // ---------- Bandeaux ----------
@@ -1393,8 +1553,18 @@ const ACTIONS = {
     aller(`#/seance/${id}/saisie`);
   },
   termine(el) {
-    const cible = `#/seance/${el.dataset.id}`;
-    if (routePrecedente === cible) history.back(); else aller(cible);
+    // Retour à l'écran d'où vient la saisie (Aujourd'hui ou la séance), sinon au détail de la séance.
+    if (routePrecedente && lireRoute(routePrecedente).nom !== 'saisie') history.back();
+    else aller(`#/seance/${el.dataset.id}`);
+  },
+  'voir-jour'(el) {
+    jourVu = el.dataset.date === aujourdhui() ? null : el.dataset.date;
+    rendre();
+  },
+  'masquer-guide'() {
+    etat.meta.guideMasque = true;
+    sauver();
+    rendre();
   },
   'date-pas'(el) {
     const id = el.closest('[data-id]').dataset.id;
