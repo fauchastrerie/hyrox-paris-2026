@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Suivi personnel du programme de préparation, 11 semaines jusqu'au vendredi 18 décembre 2026.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f2">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1013">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Prépa Paris">
+  <meta name="format-detection" content="telephone=no">
+  <title>Prépa Paris</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <a class="evitement" href="#contenu">Aller au contenu</a>
+  <div class="barre-statut" aria-hidden="true"></div>
+  <div class="coquille">
+    <nav class="onglets" aria-label="Navigation principale">
+      <p class="marque" aria-hidden="true"><span>Prépa Paris</span><small>18 déc. 2026 · 9h</small></p>
+      <a href="#/aujourdhui" data-onglet="aujourdhui">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 9.5h17M8 3v4M16 3v4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><rect x="7.5" y="12.5" width="4" height="4" rx="1" fill="currentColor"/></svg>
+        <span>Aujourd'hui</span>
+      </a>
+      <a href="#/programme" data-onglet="programme">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M9 6.5h11M9 12h11M9 17.5h11" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="4.75" cy="6.5" r="1.4" fill="currentColor"/><circle cx="4.75" cy="12" r="1.4" fill="currentColor"/><circle cx="4.75" cy="17.5" r="1.4" fill="currentColor"/></svg>
+        <span>Programme</span>
+      </a>
+      <a href="#/reperes" data-onglet="reperes">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M4.5 16.5a8 8 0 1 1 15 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M12 15.5l4-5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.8" fill="currentColor"/><path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+        <span>Repères</span>
+      </a>
+      <a href="#/suivi" data-onglet="suivi">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false"><path d="M4 20h16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><rect x="5.5" y="11" width="3.2" height="6.5" rx="1" fill="currentColor"/><rect x="10.4" y="6.5" width="3.2" height="11" rx="1" fill="currentColor"/><rect x="15.3" y="9" width="3.2" height="8.5" rx="1" fill="currentColor"/></svg>
+        <span>Suivi</span>
+      </a>
+    </nav>
+    <div class="colonne">
+      <div id="bandeaux"></div>
+      <main id="contenu" tabindex="-1">
+        <noscript><p class="carte">Cette appli a besoin de JavaScript.</p></noscript>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
