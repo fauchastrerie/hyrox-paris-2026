@@ -6,7 +6,7 @@ Appli web de suivi du programme d'entraînement (11 semaines, du lundi 5 octobre
 
 | Fichier | Rôle |
 | --- | --- |
-| `index.html`, `styles.css` | Page et mise en forme (mobile d'abord, thèmes clair et sombre) |
+| `index.html`, `styles.css` | Page et mise en forme (mobile d'abord ; thème sombre par défaut, clair ou « comme le téléphone » dans Repères) |
 | `app.js` | Navigation, rendu des écrans, saisies |
 | `programme.js` | Le programme, transcrit tel quel (source unique du contenu des séances) |
 | `calculs.js` | Dates, allures, chronos, règles du programme (fonctions pures) |

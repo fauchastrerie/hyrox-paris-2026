@@ -1263,6 +1263,10 @@ function vueReperes() {
       <div data-zone="tableau-allures" data-id="" data-deps="reperes">${ZONES['tableau-allures']()}</div>
       ${rendreBlocs(allures.blocs.filter((b) => b.type === 'ul'))}
     </section>
+    <section class="carte" aria-labelledby="t-apparence">
+      <h2 id="t-apparence">${tuile('lune', 'petite')}Apparence</h2>
+      ${radios({ legend: 'Thème', nom: 'theme', chemin: 'theme', options: Object.entries(THEMES), valeur: themeChoisi(), attr: 'apparence', classe: 'groupe--theme groupe--dernier' })}
+    </section>
     <section class="carte" id="sauvegarde" aria-labelledby="t-sauvegarde">
       <h2 id="t-sauvegarde">${tuile('disquette', 'petite')}Sauvegarde</h2>
       <div data-zone="sauvegarde" data-id="" data-deps="sauvegarde">${htmlSauvegarde()}</div>
@@ -1440,6 +1444,24 @@ function grapheColonnes(items, libelle) {
 }
 
 // ---------- Bandeaux ----------
+// ---------- Thème : sombre par défaut (posé dès le chargement par index.html) ----------
+const CLE_THEME = 'hyrox-paris-2026:theme';
+const THEMES = { sombre: 'Sombre', clair: 'Clair', auto: 'Comme le téléphone' };
+const systemeSombre = window.matchMedia('(prefers-color-scheme: dark)');
+function themeChoisi() {
+  try { return THEMES[localStorage.getItem(CLE_THEME)] ? localStorage.getItem(CLE_THEME) : 'sombre'; } catch { return 'sombre'; }
+}
+function appliquerTheme(choix = themeChoisi()) {
+  const sombre = choix === 'sombre' || (choix === 'auto' && systemeSombre.matches);
+  document.documentElement.dataset.theme = sombre ? 'sombre' : 'clair';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', sombre ? '#0e1013' : '#f5f5f2');
+}
+function choisirTheme(choix) {
+  try { localStorage.setItem(CLE_THEME, choix); } catch { /* le choix vaut pour cette ouverture seulement */ }
+  appliquerTheme(choix);
+}
+systemeSombre.addEventListener('change', () => appliquerTheme());
+
 const estInstallee = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 
 function rendreBandeaux() {
@@ -1814,6 +1836,7 @@ main.addEventListener('change', (e) => {
   const el = e.target;
   if (el.id === 'fichier-import') { lireFichierImport(el); return; }
   if (el.type === 'radio' || el.type === 'checkbox') {
+    if (el.dataset.apparence) { choisirTheme(el.value); return; }
     if (el.dataset.champ) surChampSaisie(el);
     else if (el.dataset.repere) surRepere(el);
     return;

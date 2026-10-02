@@ -392,6 +392,7 @@ for (const largeur of [360, 390, 768, 1280]) {
     const mobile = largeur < 768;
     const { ctx, page: p } = await nouveauContexte({ viewport: { width: largeur, height: largeur >= 1024 ? 900 : 800 }, colorScheme: theme, isMobile: mobile, hasTouch: largeur < 1024 });
     await ctx.addInitScript(([cle, d]) => { if (!localStorage.getItem(cle)) localStorage.setItem(cle, JSON.stringify(d)); }, [CLE, donnees]);
+    await ctx.addInitScript(() => localStorage.setItem('hyrox-paris-2026:theme', 'auto')); // clair et sombre suivent le navigateur
     await p.goto(`${BASE}?date=2026-11-28#/aujourdhui`);
     await p.waitForSelector('.entete__compte');
     for (const [nom, hash] of PAGES) {

@@ -2,7 +2,7 @@
 
 /* ---------- Jetons ---------- */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --fond: #f5f5f2;
   --surface: #ffffff;
   --surface-2: #efefeb;
@@ -31,31 +31,30 @@
   --police: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fond: #0e1013;
-    --surface: #171a1f;
-    --surface-2: #21252b;
-    --surface-nav: #14171b;
-    --texte: #eceef1;
-    --texte-2: #a7aeb9;
-    --bord: #2c3139;
-    --bord-fort: #6b7380;
-    --accent: #ff7a45;
-    --accent-texte: #1a0b04;
-    --accent-lien: #ff8f63;
-    --accent-doux: #3b2116;
-    --ok: #4ade80;
-    --modif: #fbbf24;
-    --saute: #f87171;
-    --sur-saute: #1a0505;
-    --saute-fond: #3a1717;
-    --a-venir: #9aa2ae;
-    --ph-reprise: #2dd4bf;
-    --ph-developpement: #60a5fa;
-    --ph-specifique: #a78bfa;
-    --ph-affutage: #f472b6;
-  }
+:root[data-theme="sombre"] {
+  color-scheme: dark;
+  --fond: #0e1013;
+  --surface: #171a1f;
+  --surface-2: #21252b;
+  --surface-nav: #14171b;
+  --texte: #eceef1;
+  --texte-2: #a7aeb9;
+  --bord: #2c3139;
+  --bord-fort: #6b7380;
+  --accent: #ff7a45;
+  --accent-texte: #1a0b04;
+  --accent-lien: #ff8f63;
+  --accent-doux: #3b2116;
+  --ok: #4ade80;
+  --modif: #fbbf24;
+  --saute: #f87171;
+  --sur-saute: #1a0505;
+  --saute-fond: #3a1717;
+  --a-venir: #9aa2ae;
+  --ph-reprise: #2dd4bf;
+  --ph-developpement: #60a5fa;
+  --ph-specifique: #a78bfa;
+  --ph-affutage: #f472b6;
 }
 
 [data-phase="reprise"] { --ph: var(--ph-reprise); }
@@ -459,7 +458,7 @@ p.encadre { display: block; }
 .groupe--rpe .choix__option span { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
 .groupe--verdict .choix { display: grid; grid-template-columns: 1fr; }
 .groupe--verdict .choix__option span { justify-content: flex-start; text-align: left; padding: 10px 14px; }
-.groupe--objectif .choix { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.groupe--objectif .choix, .groupe--theme .choix { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 .champ { display: flex; flex-direction: column; gap: 4px; min-width: 0; margin: 0 0 14px; }
 .champ > label { font-size: 0.9375rem; font-weight: 650; }
@@ -648,7 +647,7 @@ tbody th { font-weight: 700; }
 
 /* ---------- Refonte visuelle : tuiles, étapes, stats (inspiration 21st.dev, en CSS pur) ---------- */
 :root { --sur-ok: #ffffff; --rayon-grand: 20px; }
-@media (prefers-color-scheme: dark) { :root { --sur-ok: #06240f; } }
+:root[data-theme="sombre"] { --sur-ok: #06240f; }
 
 /* Valeurs : demi-gras par défaut, pastille pour les allures, pastille accent pour ce qui dépend de tes repères. */
 .val { font-weight: 700; }
@@ -896,11 +895,9 @@ tbody th { font-weight: 700; }
   --ressort: cubic-bezier(0.2, 0.9, 0.3, 1.15);
   --sortie: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --t-orange: #ff8a50; --t-vert: #2dd4bf; --t-bleu: #60a5fa; --t-violet: #a78bfa;
-    --t-rose: #fb7185; --t-ambre: #fbbf24; --t-nuit: #a5b4fc;
-  }
+:root[data-theme="sombre"] {
+  --t-orange: #ff8a50; --t-vert: #2dd4bf; --t-bleu: #60a5fa; --t-violet: #a78bfa;
+  --t-rose: #fb7185; --t-ambre: #fbbf24; --t-nuit: #a5b4fc;
 }
 [data-teinte="orange"] { --t: var(--t-orange); }
 [data-teinte="vert"] { --t: var(--t-vert); }

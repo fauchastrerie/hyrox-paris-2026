@@ -6,14 +6,23 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="Suivi personnel du programme de préparation, 11 semaines jusqu'au vendredi 18 décembre 2026.">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f2">
-  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0e1013">
+  <meta name="theme-color" content="#0e1013">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Prépa Paris">
   <meta name="format-detection" content="telephone=no">
   <title>Prépa Paris</title>
+  <script>
+    // Thème posé avant le premier affichage : sombre par défaut, sinon le choix fait dans Repères (Clair, ou Comme le téléphone).
+    (function () {
+      var choix = 'sombre';
+      try { choix = localStorage.getItem('hyrox-paris-2026:theme') || 'sombre'; } catch (e) {}
+      var sombre = choix !== 'clair' && (choix !== 'auto' || matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = sombre ? 'sombre' : 'clair';
+      document.querySelector('meta[name="theme-color"]').content = sombre ? '#0e1013' : '#f5f5f2';
+    })();
+  </script>
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
