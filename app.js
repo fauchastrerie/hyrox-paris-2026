@@ -6,6 +6,7 @@ import {
 } from './programme.js';
 import * as C from './calculs.js';
 import * as Stock from './stockage.js';
+import * as I from './icones.js';
 
 // ---------- Index du programme ----------
 const PAR_ID = new Map();
@@ -259,40 +260,42 @@ function rendreBlocs(blocs) {
   }).join('');
 }
 
-function repliable(titre, contenu, { ouvert = false, id = '', emoji = '' } = {}) {
-  return `<details class="repliable carte"${id ? ` id="${id}"` : ''}${ouvert ? ' open' : ''}><summary>${emoji ? tuile(emoji, 'petite') : ''}<span>${esc(titre)}</span></summary><div class="repliable__corps">${contenu}</div></details>`;
+function repliable(titre, contenu, { ouvert = false, id = '', icone = '' } = {}) {
+  return `<details class="repliable carte"${id ? ` id="${id}"` : ''}${ouvert ? ' open' : ''}><summary>${icone ? tuile(icone, 'petite') : ''}<span>${esc(titre)}</span></summary><div class="repliable__corps">${contenu}</div></details>`;
 }
 
-// ---------- Icônes : emoji du système, rien à télécharger ----------
-const EMOJI_TYPE = { run1: '⚡', run2: '🏃', push: '💪', pull: '🧗', hyrox: '🏋️', course: '🏁', repos: '🌙' };
-const EMOJI_STATION = { ski: '⛷️', sledPush: '🛷', sledPull: '🪢', bbj: '🤸', row: '🚣', farmers: '🧳', fentes: '🦵', wb: '🏐' };
+// ---------- Icônes : pictogrammes SVG (icones.js), même rendu sur tous les téléphones ----------
+const ICONE_TYPE = { run1: 'eclair', run2: 'pas', push: 'haltere', pull: 'traction', hyrox: 'kettlebell', course: 'drapeau', repos: 'lune' };
+const ICONE_STATION = { ski: 'montagne', sledPush: 'pousse', sledPull: 'tire', bbj: 'saut', row: 'vagues', farmers: 'kettlebells', fentes: 'fente', wb: 'ballon' };
 const JOUR_COURT = { lun: 'lun', mar: 'mar', mer: 'mer', jeu: 'jeu', ven: 'ven', sam: 'sam', dim: 'dim' };
 
-function tuile(emoji, taille = '') {
-  return `<span class="tuile${taille ? ` tuile--${taille}` : ''}" aria-hidden="true">${emoji}</span>`;
+function tuile(nom, taille = '') {
+  return `<span class="tuile${taille ? ` tuile--${taille}` : ''}" data-teinte="${I.teinte(nom)}" aria-hidden="true">${I.svg(nom)}</span>`;
 }
+
+const pictogramme = (nom, classe = 'picto') => `<span class="${classe}" data-teinte="${I.teinte(nom)}" aria-hidden="true">${I.svg(nom)}</span>`;
 
 function iconeEtape(texte) {
   const t = texte.toLowerCase();
-  if (/sled push|\bpush\b/.test(t)) return EMOJI_STATION.sledPush;
-  if (/sled pull|\bpull\b/.test(t)) return EMOJI_STATION.sledPull;
-  if (/\bwb\b|wall ball/.test(t)) return EMOJI_STATION.wb;
-  if (/bbj|burpee/.test(t)) return EMOJI_STATION.bbj;
-  if (/fentes/.test(t)) return EMOJI_STATION.fentes;
-  if (/rameur/.test(t)) return EMOJI_STATION.row;
-  if (/skierg/.test(t)) return EMOJI_STATION.ski;
-  if (/farmers/.test(t)) return EMOJI_STATION.farmers;
-  if (/bloc j-|jambes légères|squat/.test(t)) return '🏋️';
-  if (/gorgées|point d'eau|boisson/.test(t)) return '💧';
-  if (/transitions/.test(t)) return '⏱️';
-  if (/stations/.test(t)) return '🎯';
-  if (/\bkm\b|\d m\b|\bef\b|\br1\b|allure|lignes droites/.test(t)) return '🏃';
-  if (/marche|récup/.test(t)) return '⏸️';
-  return '▸';
+  if (/sled push|\bpush\b/.test(t)) return ICONE_STATION.sledPush;
+  if (/sled pull|\bpull\b/.test(t)) return ICONE_STATION.sledPull;
+  if (/\bwb\b|wall ball/.test(t)) return ICONE_STATION.wb;
+  if (/bbj|burpee/.test(t)) return ICONE_STATION.bbj;
+  if (/fentes/.test(t)) return ICONE_STATION.fentes;
+  if (/rameur/.test(t)) return ICONE_STATION.row;
+  if (/skierg/.test(t)) return ICONE_STATION.ski;
+  if (/farmers/.test(t)) return ICONE_STATION.farmers;
+  if (/bloc j-|jambes légères|squat/.test(t)) return 'kettlebell';
+  if (/gorgées|point d'eau|boisson/.test(t)) return 'goutte';
+  if (/transitions/.test(t)) return 'chrono';
+  if (/stations/.test(t)) return 'cible';
+  if (/\bkm\b|\d m\b|\bef\b|\br1\b|allure|lignes droites/.test(t)) return 'pas';
+  if (/marche|récup/.test(t)) return 'pause';
+  return 'point';
 }
 
-function puce(emoji, contenu, classe = '') {
-  return `<span class="puce${classe ? ` ${classe}` : ''}">${emoji ? `<span class="puce__emoji" aria-hidden="true">${emoji}</span>` : ''}${contenu}</span>`;
+function puce(icone, contenu, classe = '') {
+  return `<span class="puce${classe ? ` ${classe}` : ''}">${icone ? pictogramme(icone, 'puce__icone') : ''}${contenu}</span>`;
 }
 
 function signeStatut(statut, decoratif = false) {
@@ -317,7 +320,7 @@ function anneau(fraction, centre, etiquette) {
 function stationsPuce(jour) {
   const st = STATIONS.filter((x) => jour.stations?.includes(x.cle));
   if (!st.length) return '';
-  return puce('', `<span class="puce__emojis" aria-hidden="true">${st.map((x) => EMOJI_STATION[x.cle]).join('')}</span>${st.length > 1 ? `${st.length} stations` : esc(st[0].nom)}`);
+  return puce('', `<span class="puce__icones" aria-hidden="true">${st.map((x) => I.svg(ICONE_STATION[x.cle])).join('')}</span>${st.length > 1 ? `${st.length} stations` : esc(st[0].nom)}`);
 }
 
 // ---------- Écran Aujourd'hui ----------
@@ -334,12 +337,12 @@ function vueAujourdhui() {
   }
   return `<h1 class="visuellement-cache">Aujourd'hui</h1>
     ${enteteJour(sit, vu)}
+    ${navigationJour(vu, auj)}
     ${sit.periode === 'programme' ? bandeSemaine(sit.semaine, vu) : ''}
     ${rappelsHtml(vu)}
     ${carte}
     ${guideDemarrage()}
-    ${lignesDiscretes(auj)}
-    ${navigationJour(vu, auj)}`;
+    ${lignesDiscretes(auj)}`;
 }
 
 function enteteJour(sit, vu) {
@@ -364,7 +367,7 @@ function enteteJour(sit, vu) {
     </div>
     ${s ? `<p class="entete__semaine">Semaine ${s.numero}/11 · ${phaseBadge(s)}</p>
       <p class="entete__objectif">${esc(s.objectif)}</p>` : ''}
-    <p class="entete__course"><span aria-hidden="true">🎯</span> Objectif course ${val(obj, revise)}${revise ? ' <span class="etiquette">révisé</span>' : ''}</p>
+    <p class="entete__course">${pictogramme('cible')} Objectif course ${val(obj, revise)}${revise ? ' <span class="etiquette">révisé</span>' : ''}</p>
   </header>`;
 }
 
@@ -375,11 +378,10 @@ function bandeSemaine(numero, vu) {
     ${s.jours.filter((j) => j.type !== 'repos').map((j) => {
       const st = statutJour(j);
       const actif = j.date === vu;
-      return `<button type="button" class="bande__jour${actif ? ' bande__jour--actif' : ''}${j.date === auj ? ' bande__jour--auj' : ''}" data-action="voir-jour" data-date="${j.date}" aria-pressed="${actif}" aria-label="${esc(maj1(C.formatDateLongue(j.date)))}, ${esc(TYPES[j.type].libelle)}, ${PASTILLES[st][1]}">
+      return `<button type="button" class="bande__jour${actif ? ' bande__jour--actif' : ''}${j.date === auj ? ' bande__jour--auj' : ''}" data-statut="${st}" data-action="voir-jour" data-date="${j.date}" aria-pressed="${actif}" aria-label="${esc(maj1(C.formatDateLongue(j.date)))}, ${esc(TYPES[j.type].libelle)}, ${PASTILLES[st][1]}">
         <span class="bande__nom">${JOUR_COURT[j.jour]}</span>
         <span class="bande__num num">${C.versDate(j.date).getDate()}</span>
-        <span class="bande__emoji" aria-hidden="true">${EMOJI_TYPE[j.type]}</span>
-        ${signeStatut(st, true)}
+        ${['faite', 'modifiee', 'sautee'].includes(st) ? signeStatut(st, true) : pictogramme(ICONE_TYPE[j.type], 'bande__icone')}
       </button>`;
     }).join('')}
   </div>`;
@@ -402,7 +404,7 @@ function guideDemarrage() {
 
 function navigationJour(vu, auj) {
   const relatif = vu === auj ? "Aujourd'hui" : vu === C.ajouterJours(auj, -1) ? 'Hier' : vu === C.ajouterJours(auj, 1) ? 'Demain' : '';
-  return `<nav class="navjour barre-fixe" aria-label="Changer de jour">
+  return `<nav class="navjour" aria-label="Changer de jour">
     <button type="button" class="bouton-icone" data-action="veille" aria-label="Veille">${ICONES.gauche}</button>
     <div class="navjour__date">
       <span>${esc(maj1(C.formatDateLongue(vu)))}</span>
@@ -423,16 +425,16 @@ function carteSeance({ jour, semaine }, { apercu = false } = {}) {
   const muscu = jour.type === 'push' || jour.type === 'pull';
   const allure = allureCle(jour);
   const puces = [
-    jour.dureeTexte ? puce('⏱️', `<span class="num">${esc(jour.dureeTexte)}</span>`) : '',
-    allure ? puce('⚡', `<span class="num">${esc(allure)}</span>`, 'puce--accent') : '',
-    jour.consigneVolume ? puce('📉', esc(jour.consigneVolume), 'puce--accent') : '',
+    jour.dureeTexte ? puce('chrono', `<span class="num">${esc(jour.dureeTexte)}</span>`) : '',
+    allure ? puce('eclair', `<span class="num">${esc(allure)}</span>`, 'puce--accent') : '',
+    jour.consigneVolume ? puce('baisse', esc(jour.consigneVolume), 'puce--accent') : '',
     stationsPuce(jour),
     apercu ? '' : pastille(statutJour(jour)),
   ].join('');
-  return `<article class="carte carte-seance" data-phase="${semaine.phase}">
+  return `<article class="carte carte-seance" data-phase="${semaine.phase}"${apercu ? '' : ` data-statut="${statutJour(jour)}"`}>
     ${apercu ? '<p class="carte__apercu">Première séance · lundi 5 octobre</p>' : ''}
     <div class="carte-seance__tete">
-      ${tuile(EMOJI_TYPE[jour.type], 'grande')}
+      ${tuile(ICONE_TYPE[jour.type], 'grande')}
       <div class="carte-seance__titres">
         <p class="carte__sur">${esc(TYPES[jour.type].libelle)}</p>
         <h2 class="carte__titre">${texteSimple(jour.titre, jour)}</h2>
@@ -440,7 +442,7 @@ function carteSeance({ jour, semaine }, { apercu = false } = {}) {
     </div>
     <div class="puces">${puces}</div>
     ${muscu ? '<p class="carte__objectif">Tu choisis tes exercices.</p>' : ''}
-    ${jour.objectif ? `<p class="carte__objectif"><span class="visuellement-cache">Objectif : </span><span aria-hidden="true">🎯 </span>${texteSimple(maj1(jour.objectif), jour)}</p>` : ''}
+    ${jour.objectif ? `<p class="carte__objectif"><span class="visuellement-cache">Objectif : </span>${pictogramme('cible')}<span>${texteSimple(maj1(jour.objectif), jour)}</span></p>` : ''}
     ${lignesSemaineCourse(jour)}
     <div class="carte__actions">
       ${apercu ? '' : `<a class="bouton bouton--principal" href="#/seance/${jour.id}/saisie" data-action="marquer" data-id="${jour.id}">${etat.saisies[jour.id] ? 'Modifier ma saisie' : 'Saisir ma séance'}</a>`}
@@ -453,12 +455,12 @@ function carteRepos(vu) {
   const suivante = prochaineSeance(vu);
   return `<article class="carte carte-repos">
     <div class="carte-seance__tete">
-      ${tuile('🌙', 'grande')}
+      ${tuile('lune', 'grande')}
       <div class="carte-seance__titres"><p class="carte__sur">Récupération</p><h2 class="carte__titre">Repos</h2></div>
     </div>
     ${suivante ? `<div class="suivante">
       <p class="carte__apercu">Prochaine séance · ${esc(maj1(C.formatDateLongue(suivante.jour.date)))}</p>
-      <div class="suivante__ligne">${tuile(EMOJI_TYPE[suivante.jour.type])}<div><p class="carte__sur">${esc(TYPES[suivante.jour.type].libelle)}</p><p class="suivante__titre">${texteSimple(suivante.jour.titre, suivante.jour)}</p></div></div>
+      <div class="suivante__ligne">${tuile(ICONE_TYPE[suivante.jour.type])}<div><p class="carte__sur">${esc(TYPES[suivante.jour.type].libelle)}</p><p class="suivante__titre">${texteSimple(suivante.jour.titre, suivante.jour)}</p></div></div>
       <div class="carte__actions"><a class="bouton" href="#/seance/${suivante.jour.id}">Voir la séance</a></div>
     </div>` : ''}
   </article>`;
@@ -474,7 +476,7 @@ function rappels(iso) {
 }
 
 function rappelsHtml(iso) {
-  return rappels(iso).map((t) => `<p class="rappel" role="note"><span class="rappel__signe" aria-hidden="true">${t.startsWith('Zéro alcool ce soir') ? '🌙' : '🚫'}</span><span>${esc(t)}</span></p>`).join('');
+  return rappels(iso).map((t) => `<p class="rappel" role="note">${pictogramme(t.startsWith('Zéro alcool ce soir') ? 'lune' : 'interdit', 'rappel__signe')}<span>${esc(t)}</span></p>`).join('');
 }
 
 function lignesDiscretes(auj) {
@@ -514,7 +516,7 @@ function ecranFin() {
   const s = etat.saisies['s11-ven'];
   const total = totalCourse(s);
   const obj = C.lireObjectif(objectifCourse());
-  const tete = `<div class="carte-seance__tete">${tuile('🏁', 'grande')}<div class="carte-seance__titres"><p class="carte__sur">Hyrox Paris · 18 décembre</p><h2 class="carte__titre">Programme terminé</h2></div></div>`;
+  const tete = `<div class="carte-seance__tete">${tuile('drapeau', 'grande')}<div class="carte-seance__titres"><p class="carte__sur">Hyrox Paris · 18 décembre</p><h2 class="carte__titre">Programme terminé</h2></div></div>`;
   if (total == null) {
     return `<article class="carte carte-fin">${tete}
       <p>Saisis ton résultat de course pour le comparer à Bordeaux (1:35:57) et à ton objectif (${esc(objectifCourse())}).</p>
@@ -526,8 +528,8 @@ function ecranFin() {
   return `<article class="carte carte-fin">${tete}
     <p class="grand-chiffre num">${ch(total)}</p>
     <dl class="stats">
-      <div><dt>${tuile('📍', 'petite')}Bordeaux 1:35:57</dt><dd>${val(C.formatEcart(eB))}</dd></div>
-      ${eO != null ? `<div><dt>${tuile('🎯', 'petite')}Objectif ${esc(objectifCourse())}</dt><dd>${eO === 0 ? 'atteint ✓' : `${val(C.formatEcart(eO))}${eO < 0 ? ' ✓' : ''}`}</dd></div>` : ''}
+      <div><dt>${tuile('lieu', 'petite')}Bordeaux 1:35:57</dt><dd>${val(C.formatEcart(eB))}</dd></div>
+      ${eO != null ? `<div><dt>${tuile('cible', 'petite')}Objectif ${esc(objectifCourse())}</dt><dd>${eO === 0 ? 'atteint ✓' : `${val(C.formatEcart(eO))}${eO < 0 ? ' ✓' : ''}`}</dd></div>` : ''}
     </dl>
     <div class="carte__actions"><a class="bouton" href="#/seance/s11-ven">Détail de la course</a></div>
   </article>`;
@@ -536,7 +538,7 @@ function ecranFin() {
 function lignesSemaineCourse(jour, { titre = false } = {}) {
   const items = SEMAINE_COURSE.filter((it) => it.jour === jour.id);
   if (!items.length) return '';
-  return `<div class="encadre encadre--course">${titre ? `<h2>${tuile('🏁', 'petite')}Semaine de course</h2>` : ''}<ul class="liste-icones">${items.map((it) => `<li>${tuile(it.texte.startsWith('Jeu soir') ? '🌙' : '🏁', 'petite')}<span>${enrichir(it.texte, { jour })}</span></li>`).join('')}</ul></div>`;
+  return `<div class="encadre encadre--course">${titre ? `<h2>${tuile('drapeau', 'petite')}Semaine de course</h2>` : ''}<ul class="liste-icones">${items.map((it) => `<li>${tuile(it.texte.startsWith('Jeu soir') ? 'lune' : 'drapeau', 'petite')}<span>${enrichir(it.texte, { jour })}</span></li>`).join('')}</ul></div>`;
 }
 
 // ---------- Détail d'une séance ----------
@@ -554,8 +556,8 @@ function lienRetour(defaut, libelle) {
   return `<a class="retour" href="${defaut}" data-action="retour">${ICONES.gauche}<span>${libelle}</span></a>`;
 }
 
-function sectionSeance(emoji, titre, html, classe = '') {
-  return `<section class="seance__bloc${classe ? ` ${classe}` : ''}"><h2>${tuile(emoji, 'petite')}${titre}</h2>${html}</section>`;
+function sectionSeance(icone, titre, html, classe = '') {
+  return `<section class="seance__bloc${classe ? ` ${classe}` : ''}"><h2>${tuile(icone, 'petite')}${titre}</h2>${html}</section>`;
 }
 
 function corpsHtml(jour) {
@@ -588,7 +590,7 @@ function detailSeance(id, { pourListe = false } = {}) {
   const entete = (titreHtml, puces) => `
     ${pourListe ? '' : lienRetourSeance()}
     <div class="seance__entete">
-      ${tuile(EMOJI_TYPE[jour.type], 'grande')}
+      ${tuile(ICONE_TYPE[jour.type], 'grande')}
       <div><p class="seance__type">${esc(TYPES[jour.type].libelle)}</p>${contexte(jour, semaine)}</div>
     </div>
     <${hT} class="seance__titre">${titreHtml}</${hT}>
@@ -599,17 +601,17 @@ function detailSeance(id, { pourListe = false } = {}) {
     return `<article class="seance" data-phase="${semaine.phase}">
       ${entete('Repos', phaseBadge(semaine))}
       ${rappelsHtml(jour.date)}
-      ${suivante ? `<a class="lien-carte" href="#/seance/${suivante.jour.id}">${tuile(EMOJI_TYPE[suivante.jour.type])}<span><span class="carte__sur">Prochaine séance · ${esc(C.formatDateCourte(suivante.jour.date))}</span><span class="suivante__titre">${texteSimple(suivante.jour.titre, suivante.jour)}</span></span></a>` : ''}
+      ${suivante ? `<a class="lien-carte" href="#/seance/${suivante.jour.id}">${tuile(ICONE_TYPE[suivante.jour.type])}<span><span class="carte__sur">Prochaine séance · ${esc(C.formatDateCourte(suivante.jour.date))}</span><span class="suivante__titre">${texteSimple(suivante.jour.titre, suivante.jour)}</span></span></a>` : ''}
     </article>`;
   }
 
   const blocs = [];
   if (jour.type === 'push' || jour.type === 'pull') {
-    if (jour.consigneVolume) blocs.push(`<p class="ligne-info">${tuile('📉', 'petite')}<span>Consigne de volume : <strong>${esc(jour.consigneVolume)}</strong></span></p>`);
+    if (jour.consigneVolume) blocs.push(`<p class="ligne-info">${tuile('baisse', 'petite')}<span>Consigne de volume : <strong>${esc(jour.consigneVolume)}</strong></span></p>`);
     blocs.push('<p class="aide">Tu choisis tes exercices. Note ce que tu as fait dans la saisie.</p>');
     const prec = SEANCES.filter((x) => x.jour.type === jour.type && x.jour.date < jour.date && etat.saisies[x.jour.id]?.notes?.trim()).pop();
     if (prec) {
-      blocs.push(`<div class="encadre"><h2>${tuile('🗒️', 'petite')}Ta dernière séance ${esc(TYPES[jour.type].libelle)} · ${esc(C.formatDateCourte(etat.saisies[prec.jour.id].date ?? prec.jour.date))}</h2><p class="notes">${esc(etat.saisies[prec.jour.id].notes)}</p></div>`);
+      blocs.push(`<div class="encadre"><h2>${tuile('crayon', 'petite')}Ta dernière séance ${esc(TYPES[jour.type].libelle)} · ${esc(C.formatDateCourte(etat.saisies[prec.jour.id].date ?? prec.jour.date))}</h2><p class="notes">${esc(etat.saisies[prec.jour.id].notes)}</p></div>`);
     }
   } else {
     const aj = jour.seuil ? etat.ajustements[jour.id] : null;
@@ -618,31 +620,31 @@ function detailSeance(id, { pourListe = false } = {}) {
         <button type="button" class="bouton bouton--discret" data-action="annuler-ajustement" data-id="${jour.id}">Revenir à l'allure prévue</button></div>`);
     }
     const efBpm = r.fcSeuil && jour.type === 'run2' && jour.id !== 's1-mer' && !jour.corps.includes('{ef}')
-      ? `<p class="repere-ef">${puce('❤️', `EF : FC &lt; ${C.plafondEF(r.fcSeuil)} bpm`, 'puce--accent')} <span class="aide">85 % de ta FC seuil</span></p>` : '';
+      ? `<p class="repere-ef">${puce('coeur', `EF : FC &lt; ${C.plafondEF(r.fcSeuil)} bpm`, 'puce--accent')} <span class="aide">85 % de ta FC seuil</span></p>` : '';
     const obj = objectifCourse();
     const noteObjectif = jour.type === 'course' && obj !== OBJECTIF_DEFAUT
       ? `<p class="encadre encadre--accent">Objectif en vigueur : ${val(obj, true)} (révisé après le retest de la semaine 9).</p>` : '';
-    blocs.push(sectionSeance('🔥', 'Échauffement', `<p class="texte">${enrichir(jour.echauffement, { jour })}</p>`));
-    blocs.push(sectionSeance('📋', 'Corps', `${efBpm}${corpsHtml(jour)}`));
-    blocs.push(sectionSeance('🧘', 'Retour au calme', `<p class="texte">${enrichir(jour.retourCalme, { jour })}</p>`));
-    blocs.push(sectionSeance('⏱️', 'Durée', `<p class="texte num">${esc(jour.dureeTexte)}.</p>`, 'seance__bloc--compact'));
-    blocs.push(sectionSeance('🎯', 'Objectif', `<p class="texte">${enrichir(jour.objectif, { jour })}</p>${noteObjectif}`));
+    blocs.push(sectionSeance('flamme', 'Échauffement', `<p class="texte">${enrichir(jour.echauffement, { jour })}</p>`));
+    blocs.push(sectionSeance('liste', 'Corps', `${efBpm}${corpsHtml(jour)}`));
+    blocs.push(sectionSeance('vent', 'Retour au calme', `<p class="texte">${enrichir(jour.retourCalme, { jour })}</p>`));
+    blocs.push(sectionSeance('chrono', 'Durée', `<p class="texte num">${esc(jour.dureeTexte)}.</p>`, 'seance__bloc--compact'));
+    blocs.push(sectionSeance('cible', 'Objectif', `<p class="texte">${enrichir(jour.objectif, { jour })}</p>${noteObjectif}`));
     const charges = STATIONS.filter((st) => jour.stations.includes(st.cle) && CHARGES[st.cle]);
     if (charges.length) {
-      blocs.push(`<div class="encadre"><h2>${tuile('🏋️', 'petite')}Charges Open men</h2><div class="puces">${charges.map((st) => puce(EMOJI_STATION[st.cle], `${esc(maj1(CHARGES[st.cle]))}${st.cle.startsWith('sled') ? ` ${esc(CHARGES_NOTE_SLED)}` : ''}`)).join('')}</div></div>`);
+      blocs.push(`<div class="encadre"><h2>${tuile('kettlebell', 'petite')}Charges Open men</h2><div class="puces">${charges.map((st) => puce(ICONE_STATION[st.cle], `${esc(maj1(CHARGES[st.cle]))}${st.cle.startsWith('sled') ? ` ${esc(CHARGES_NOTE_SLED)}` : ''}`)).join('')}</div></div>`);
     }
     if (jour.duree > 60) {
-      blocs.push(`<p class="ligne-info">${tuile('💧', 'petite')}<span>Dans toute séance de plus de 60 min, bois 500 à 750 ml par heure avec électrolytes, en petites gorgées dès le début.</span></p>`);
+      blocs.push(`<p class="ligne-info">${tuile('goutte', 'petite')}<span>Dans toute séance de plus de 60 min, bois 500 à 750 ml par heure avec électrolytes, en petites gorgées dès le début.</span></p>`);
     }
   }
   blocs.push(lignesSemaineCourse(jour, { titre: true }));
   if (jour.type === 'hyrox') {
-    const icones = { transitions: '⏱️', 'series-WB': EMOJI_STATION.wb, 'charges-seance': '🏋️' };
-    blocs.push(`<div class="encadre"><h2>${tuile('📌', 'petite')}Consignes permanentes</h2><ul class="liste-icones">${SECTION.consignes.blocs[0].items.map((it) => `<li>${tuile(icones[it.id] ?? '▸', 'petite')}<span>${enrichir(it.texte)}</span></li>`).join('')}</ul></div>`);
+    const icones = { transitions: 'chrono', 'series-WB': ICONE_STATION.wb, 'charges-seance': 'kettlebell' };
+    blocs.push(`<div class="encadre"><h2>${tuile('punaise', 'petite')}Consignes permanentes</h2><ul class="liste-icones">${SECTION.consignes.blocs[0].items.map((it) => `<li>${tuile(icones[it.id] ?? 'point', 'petite')}<span>${enrichir(it.texte)}</span></li>`).join('')}</ul></div>`);
   }
   if (s) blocs.push(resumeSaisie(jour, s));
 
-  const puces = [jour.dureeTexte ? puce('⏱️', `<span class="num">${esc(jour.dureeTexte)}</span>`) : '', phaseBadge(semaine), pastille(statutJour(jour))].join('');
+  const puces = [jour.dureeTexte ? puce('chrono', `<span class="num">${esc(jour.dureeTexte)}</span>`) : '', phaseBadge(semaine), pastille(statutJour(jour))].join('');
   return `<article class="seance" data-phase="${semaine.phase}">
     ${entete(enrichir(jour.titre, { jour }), puces)}
     ${blocs.join('')}
@@ -662,47 +664,47 @@ const STATUTS = { faite: 'Faite', modifiee: 'Faite avec modifications', sautee: 
 function resumeSaisie(jour, s) {
   const d = s.details ?? {};
   const lignes = [];
-  const ligne = (emoji, libelle, valeur) => lignes.push(`<div><dt>${tuile(emoji, 'petite')}${libelle}</dt><dd>${valeur}</dd></div>`);
-  ligne('📌', 'Statut', pastille(s.statut));
-  if (s.date && s.date !== jour.date) ligne('📅', 'Faite le', esc(C.formatDateCourte(s.date)));
+  const ligne = (icone, libelle, valeur) => lignes.push(`<div><dt>${tuile(icone, 'petite')}${libelle}</dt><dd>${valeur}</dd></div>`);
+  ligne('punaise', 'Statut', pastille(s.statut));
+  if (s.date && s.date !== jour.date) ligne('calendrier', 'Faite le', esc(C.formatDateCourte(s.date)));
   if (s.statut !== 'sautee') {
-    if (s.rpe) ligne('🔥', 'Effort (RPE)', `<span class="num">${s.rpe}/10</span>`);
-    if (s.duree) ligne('⏱️', 'Durée', `<span class="num">${s.duree} min</span>`);
-    if (s.fc) ligne('❤️', 'FC moyenne', `<span class="num">${s.fc} bpm</span>`);
+    if (s.rpe) ligne('flamme', 'Effort (RPE)', `<span class="num">${s.rpe}/10</span>`);
+    if (s.duree) ligne('chrono', 'Durée', `<span class="num">${s.duree} min</span>`);
+    if (s.fc) ligne('coeur', 'FC moyenne', `<span class="num">${s.fc} bpm</span>`);
   }
   switch (jour.formulaire) {
     case 'test30':
-      if (d.distance) ligne('📏', 'Distance', `<span class="num">${d.distance} m</span>`);
-      if (d.allure20 != null) ligne('⚡', 'Allure, 20 dernières min', `<span class="num">${ch(d.allure20)}/km</span>`);
-      if (d.fc20) ligne('❤️', 'FC, 20 dernières min', `<span class="num">${d.fc20} bpm</span>`);
+      if (d.distance) ligne('regle', 'Distance', `<span class="num">${d.distance} m</span>`);
+      if (d.allure20 != null) ligne('eclair', 'Allure, 20 dernières min', `<span class="num">${ch(d.allure20)}/km</span>`);
+      if (d.fc20) ligne('coeur', 'FC, 20 dernières min', `<span class="num">${d.fc20} bpm</span>`);
       break;
     case 'testWB':
-      if (d.maxWB) ligne(EMOJI_STATION.wb, "Max d'affilée", `<span class="num">${d.maxWB} → S = ${d.S ?? C.tailleSerie(d.maxWB)}</span>`);
+      if (d.maxWB) ligne(ICONE_STATION.wb, "Max d'affilée", `<span class="num">${d.maxWB} → S = ${d.S ?? C.tailleSerie(d.maxWB)}</span>`);
       break;
     case 'seuil': {
       const reps = (d.reps ?? []).filter((x) => x != null);
-      if (reps.length) ligne('⚡', 'Répétitions', `<span class="num">${reps.map(ch).join(' · ')}</span>`);
-      if (d.verdict) ligne('📈', 'Fin de séance', esc(VERDICTS[d.verdict]));
+      if (reps.length) ligne('eclair', 'Répétitions', `<span class="num">${reps.map(ch).join(' · ')}</span>`);
+      if (d.verdict) ligne('hausse', 'Fin de séance', esc(VERDICTS[d.verdict]));
       break;
     }
     case 'moitie': case 'retest': {
       const t = C.sommeSegments(DEUXIEME_MOITIE.segments.map((x) => d.segments?.[x.cle] ?? null));
-      if (t.renseignes) ligne('⏱️', 'Total hors transitions', `<span class="num">${ch(t.total)}${t.complet ? '' : ` (${t.renseignes}/8)`}</span>`);
+      if (t.renseignes) ligne('chrono', 'Total hors transitions', `<span class="num">${ch(t.total)}${t.complet ? '' : ` (${t.renseignes}/8)`}</span>`);
       break;
     }
     case 'simulation': case 'course': {
       const t = jour.formulaire === 'course' ? totalCourse(s) : (d.total ?? sommeSimulation(d).total);
-      if (t) ligne('🏁', 'Total', `<span class="num">${ch(t)}</span>`);
+      if (t) ligne('drapeau', 'Total', `<span class="num">${ch(t)}</span>`);
       break;
     }
     case 'hyrox': {
       const tours = (d.tours ?? []).filter((x) => x != null);
-      if (tours.length) ligne('🔁', 'Tours', `<span class="num">${tours.map(ch).join(' · ')}</span>`);
+      if (tours.length) ligne('boucle', 'Tours', `<span class="num">${tours.map(ch).join(' · ')}</span>`);
       break;
     }
     default:
   }
-  return `<section class="encadre encadre--saisie"><h2>${tuile('📝', 'petite')}Ta saisie</h2><dl class="stats">${lignes.join('')}</dl>${s.notes?.trim() ? `<p class="notes">${esc(s.notes)}</p>` : ''}</section>`;
+  return `<section class="encadre encadre--saisie"><h2>${tuile('crayon', 'petite')}Ta saisie</h2><dl class="stats">${lignes.join('')}</dl>${s.notes?.trim() ? `<p class="notes">${esc(s.notes)}</p>` : ''}</section>`;
 }
 
 function sommeSimulation(d) {
@@ -772,11 +774,11 @@ function vueSaisie(id) {
   return `<form class="saisie" data-id="${id}" novalidate>
     ${lienRetour(`#/seance/${id}`, 'Séance')}
     <div class="seance__entete">
-      ${tuile(EMOJI_TYPE[jour.type], 'grande')}
+      ${tuile(ICONE_TYPE[jour.type], 'grande')}
       <div><p class="seance__type">Saisie · ${esc(TYPES[jour.type].libelle)}</p>${contexte(jour, semaine)}</div>
     </div>
     <h1 class="seance__titre">${texteSimple(jour.titre, jour)}</h1>
-    <p id="enregistre" class="enregistre" role="status">💾 Enregistrement automatique à chaque modification</p>
+    <p class="enregistre">${pictogramme('disquette')}<span id="enregistre" role="status">Enregistrement automatique à chaque modification</span></p>
     <div class="carte">
       ${radios({ legend: 'Statut', nom: 'statut', chemin: 'statut', options: Object.entries(STATUTS), valeur: s.statut, classe: 'groupe--statut' })}
       <div class="saisie__realisee"${cache}>
@@ -1161,7 +1163,7 @@ function listeProgramme(selection, { titre = 'h1' } = {}) {
   const auj = aujourdhui();
   const legende = `<p class="legende" aria-hidden="true">${Object.keys(PASTILLES).map((k) => `<span>${signeStatut(k, true)}${PASTILLES[k][1]}</span>`).join('')}</p>`;
   return `<${titre} class="titre-ecran">Programme</${titre}>
-    ${repliable("Vue d'ensemble", rendreBlocs(SECTION['vue-ensemble'].blocs), { id: 'vue-ensemble', emoji: '🗺️' })}
+    ${repliable("Vue d'ensemble", rendreBlocs(SECTION['vue-ensemble'].blocs), { id: 'vue-ensemble', icone: 'carte' })}
     ${legende}
     <ol class="semaines">${SEMAINES.map((s) => {
       const seances = s.jours.filter((j) => j.type !== 'repos');
@@ -1179,7 +1181,7 @@ function listeProgramme(selection, { titre = 'h1' } = {}) {
         </summary>
         ${s.note ? `<p class="semaine__note">${esc(s.note)}</p>` : ''}
         <ul class="jours">${s.jours.map((j) => `<li><a class="jour${j.type === 'repos' ? ' jour--repos' : ''}${j.id === selection ? ' jour--selection' : ''}${j.date === auj ? ' jour--aujourdhui' : ''}" href="#/seance/${j.id}"${j.id === selection ? ' aria-current="page"' : ''}>
-          ${tuile(EMOJI_TYPE[j.type], 'petite')}
+          ${tuile(ICONE_TYPE[j.type], 'petite')}
           <span class="jour__corps">
             <span class="jour__date">${esc(C.formatDateCourte(j.date).replace(/ \S+$/, ''))} · ${esc(TYPES[j.type].libelle)}${j.date === auj ? ' <span class="etiquette">aujourd\'hui</span>' : ''}</span>
             ${j.type !== 'repos' ? `<span class="jour__titre">${esc(titreCourt(j, s))}</span>` : ''}
@@ -1227,20 +1229,20 @@ function vueReperes() {
   const optionsObj = [['1h25', '1h25'], ['1h27', '1h27'], ['1h29-1h30', '1h29-1h30']];
   const autre = !optionsObj.some(([v]) => v === obj);
   const sections = [
-    ['Objectif et temps cibles', 'objectif', '🎯'],
-    ['Tests', 'tests', '🧪'],
-    ['Standards', 'standards', '📏'],
-    ['Blocs jambes (dans les séances Hyrox)', 'jambes', '🦵'],
-    ['Consignes permanentes en séance Hyrox', 'consignes', '📌'],
-    ['Hydratation, sommeil, alcool', 'hydratation', '💧'],
-    ['Partie 1 — Diagnostic', 'diagnostic', '🔎'],
-    ['Partie 4 — Semaine de course', 'semaine-course', '🏁'],
-    ['Sources', 'sources', '🔗'],
+    ['Objectif et temps cibles', 'objectif', 'cible'],
+    ['Tests', 'tests', 'fiole'],
+    ['Standards', 'standards', 'regle'],
+    ['Blocs jambes (dans les séances Hyrox)', 'jambes', 'fente'],
+    ['Consignes permanentes en séance Hyrox', 'consignes', 'punaise'],
+    ['Hydratation, sommeil, alcool', 'hydratation', 'goutte'],
+    ['Partie 1 — Diagnostic', 'diagnostic', 'loupe'],
+    ['Partie 4 — Semaine de course', 'semaine-course', 'drapeau'],
+    ['Sources', 'sources', 'lien'],
   ];
   const allures = SECTION.allures;
   return `<h1 class="titre-ecran">Repères</h1>
     <section class="carte" aria-labelledby="t-mes-reperes">
-      <h2 id="t-mes-reperes">${tuile('🎛️', 'petite')}Mes repères</h2>
+      <h2 id="t-mes-reperes">${tuile('reglages', 'petite')}Mes repères</h2>
       <div class="grille-champs">
         ${champ({ label: 'Allure seuil (m:ss/km)', chemin: 'seuil', valeur: r.seuil, format: 'chrono', attr: 'repere', placeholder: '4:57', aide: '4:57 par défaut · fixée par le test 30 min (S2)' })}
         ${champ({ label: 'FC seuil (bpm)', chemin: 'fcSeuil', valeur: r.fcSeuil, format: 'entier', attr: 'repere', aide: 'Vide par défaut · test 30 min (S2)' })}
@@ -1256,16 +1258,16 @@ function vueReperes() {
       <div data-zone="objectif-info" data-id="" data-deps="reperes.objectif">${ZONES['objectif-info']()}</div>
     </section>
     <section class="carte" aria-labelledby="t-allures">
-      <h2 id="t-allures">${tuile('⚡', 'petite')}Allures</h2>
+      <h2 id="t-allures">${tuile('eclair', 'petite')}Allures</h2>
       ${paragraphe(allures.blocs[0].texte)}
       <div data-zone="tableau-allures" data-id="" data-deps="reperes">${ZONES['tableau-allures']()}</div>
       ${rendreBlocs(allures.blocs.filter((b) => b.type === 'ul'))}
     </section>
     <section class="carte" id="sauvegarde" aria-labelledby="t-sauvegarde">
-      <h2 id="t-sauvegarde">${tuile('💾', 'petite')}Sauvegarde</h2>
+      <h2 id="t-sauvegarde">${tuile('disquette', 'petite')}Sauvegarde</h2>
       <div data-zone="sauvegarde" data-id="" data-deps="sauvegarde">${htmlSauvegarde()}</div>
     </section>
-    ${sections.map(([titre, id, emoji]) => repliable(titre, rendreBlocs(SECTION[id].blocs), { id: `ref-${id}`, emoji })).join('')}`;
+    ${sections.map(([titre, id, icone]) => repliable(titre, rendreBlocs(SECTION[id].blocs), { id: `ref-${id}`, icone })).join('')}`;
 }
 
 function htmlSauvegarde() {
@@ -1385,30 +1387,30 @@ function vueSuivi() {
       </div>
     </section>
     <section class="carte" aria-labelledby="t-semaines">
-      <h2 id="t-semaines">${tuile('📅', 'petite')}Séances faites par semaine</h2>
+      <h2 id="t-semaines">${tuile('calendrier', 'petite')}Séances faites par semaine</h2>
       ${grapheColonnes(parSemaine.map(({ s, f, n }) => ({ etiquette: `S${s.numero}`, valeur: f, max: n, texte: `${f}/${n}`, phase: s.phase, titre: `Semaine ${s.numero} : ${f} séances faites sur ${n}` })), 'Séances faites par semaine')}
     </section>
     <section class="carte" aria-labelledby="t-rpe">
-      <h2 id="t-rpe">${tuile('🔥', 'petite')}RPE moyen par semaine</h2>
+      <h2 id="t-rpe">${tuile('flamme', 'petite')}RPE moyen par semaine</h2>
       ${grapheColonnes(parSemaine.map(({ s, rpe }) => ({ etiquette: `S${s.numero}`, valeur: rpe, max: 10, texte: rpe != null ? nombreFr(rpe) : '', phase: s.phase, titre: `Semaine ${s.numero} : ${rpe != null ? `RPE moyen ${nombreFr(rpe)}` : 'pas de RPE noté'}` })), 'RPE moyen par semaine')}
       ${aucunRpe ? '<p class="aide">Le RPE moyen apparaît dès que tu notes ton effort dans une saisie.</p>' : ''}
     </section>
     <section class="carte" aria-labelledby="t-tests">
-      <h2 id="t-tests">${tuile('🧪', 'petite')}Tests et repères</h2>
+      <h2 id="t-tests">${tuile('fiole', 'petite')}Tests et repères</h2>
       <dl class="stats">
-        <div><dt>${tuile('🏃', 'petite')}Test 30 min (S2)</dt><dd>${t30Texte ? `<span class="num">${esc(t30Texte)}</span>` : '<span class="aide">non renseigné</span>'}</dd></div>
-        <div><dt>${tuile('⚡', 'petite')}Allure seuil</dt><dd>${val(C.formatMinSec(r.seuil) + '/km', true)}</dd></div>
-        <div><dt>${tuile('❤️', 'petite')}FC seuil</dt><dd>${r.fcSeuil ? val(`${r.fcSeuil} bpm`, true) : '<span class="aide">à fixer</span>'}</dd></div>
-        <div><dt>${tuile(EMOJI_STATION.wb, 'petite')}Taille de série</dt><dd>${val(`S = ${r.S}`, true)}${r.maxWB ? ` <span class="aide">max ${r.maxWB}</span>` : ''}</dd></div>
-        <div><dt>${tuile('🎯', 'petite')}Objectif de course</dt><dd>${val(objectifCourse(), objectifCourse() !== OBJECTIF_DEFAUT)}${r.objectifSource === 'retest' ? ' <span class="aide">révisé</span>' : r.objectifSource === 'manuel' ? ' <span class="aide">à la main</span>' : ''}</dd></div>
+        <div><dt>${tuile('pas', 'petite')}Test 30 min (S2)</dt><dd>${t30Texte ? `<span class="num">${esc(t30Texte)}</span>` : '<span class="aide">non renseigné</span>'}</dd></div>
+        <div><dt>${tuile('eclair', 'petite')}Allure seuil</dt><dd>${val(C.formatMinSec(r.seuil) + '/km', true)}</dd></div>
+        <div><dt>${tuile('coeur', 'petite')}FC seuil</dt><dd>${r.fcSeuil ? val(`${r.fcSeuil} bpm`, true) : '<span class="aide">à fixer</span>'}</dd></div>
+        <div><dt>${tuile(ICONE_STATION.wb, 'petite')}Taille de série</dt><dd>${val(`S = ${r.S}`, true)}${r.maxWB ? ` <span class="aide">max ${r.maxWB}</span>` : ''}</dd></div>
+        <div><dt>${tuile('cible', 'petite')}Objectif de course</dt><dd>${val(objectifCourse(), objectifCourse() !== OBJECTIF_DEFAUT)}${r.objectifSource === 'retest' ? ' <span class="aide">révisé</span>' : r.objectifSource === 'manuel' ? ' <span class="aide">à la main</span>' : ''}</dd></div>
       </dl>
       ${comparaisonMoities()}
     </section>
     <section class="carte" aria-labelledby="t-journal">
-      <h2 id="t-journal">${tuile('📝', 'petite')}Journal</h2>
+      <h2 id="t-journal">${tuile('crayon', 'petite')}Journal</h2>
       ${journal.length ? `<ol class="journal">${journal.map(({ id, s, jour, semaine }) => `<li>
         <a href="#/seance/${id}">
-          ${tuile(EMOJI_TYPE[jour.type])}
+          ${tuile(ICONE_TYPE[jour.type])}
           <span class="journal__corps">
             <span class="journal__tete"><span class="num">${esc(maj1(C.formatDateCourte(s.date ?? jour.date)))}</span> · S${semaine.numero} · ${esc(TYPES[jour.type].libelle)}</span>
             <span class="journal__titre">${texteSimple(jour.titre, jour)}</span>
@@ -1445,7 +1447,7 @@ function rendreBandeaux() {
   if (DATE_FORCEE) b.push(`<p class="bandeau bandeau--info">Date de test : ${esc(C.formatDateLongue(DATE_FORCEE))}</p>`);
   if (alerteStockage) b.push(`<p class="bandeau bandeau--alerte" role="alert">${esc(alerteStockage)}</p>`);
   if (majWorker) b.push('<div class="bandeau bandeau--maj" role="status"><span>Nouvelle version disponible</span><button type="button" class="bouton bouton--principal" data-action="recharger">Recharger</button></div>');
-  if (!estInstallee() && !etat.meta.bandeauInstallMasque) {
+  if (!estInstallee() && !etat.meta.bandeauInstallMasque && lireRoute().nom === 'aujourdhui') {
     const ua = navigator.userAgent;
     const ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const android = /Android/.test(ua);
@@ -1453,12 +1455,67 @@ function rendreBandeaux() {
     if (ios || !android) lignes.push('<li><strong>iPhone</strong> : Partager → Sur l\'écran d\'accueil</li>');
     if (android || !ios) lignes.push('<li><strong>Android</strong> : menu ⋮ → Installer l\'application</li>');
     b.push(`<div class="bandeau bandeau--install">
-      <div><p><strong>Installe l'appli</strong> pour l'ouvrir d'un geste et protéger tes données.</p><ul>${lignes.join('')}</ul></div>
-      <div class="actions">${invitationInstall ? '<button type="button" class="bouton bouton--principal" data-action="installer">Installer</button>' : ''}<button type="button" class="bouton bouton--discret" data-action="masquer-install">Masquer</button></div>
+      ${pictogramme('telephone', 'bandeau__picto')}
+      <details class="bandeau__texte"><summary><strong>Installe l'appli</strong> sur l'écran d'accueil</summary><ul>${lignes.join('')}</ul></details>
+      ${invitationInstall ? '<button type="button" class="bouton bouton--principal bouton--petit" data-action="installer">Installer</button>' : ''}
+      <button type="button" class="bouton-icone bouton-icone--discret" data-action="masquer-install" aria-label="Masquer ce conseil">${I.svg('croix', 20)}</button>
     </div>`);
   }
   zoneBandeaux.innerHTML = b.join('');
 }
+
+// ---------- Message flottant après une saisie ----------
+let minuterieToast = null;
+function toast(texte, { icone = 'coche', ton = 'ok' } = {}) {
+  let el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.className = 'toast';
+    el.setAttribute('role', 'status');
+    document.body.append(el);
+  }
+  el.dataset.ton = ton;
+  el.innerHTML = `<span class="toast__picto">${I.svg(icone, 20)}</span><span>${esc(texte)}</span>`;
+  el.classList.remove('toast--visible');
+  void el.offsetWidth;
+  el.classList.add('toast--visible');
+  clearTimeout(minuterieToast);
+  minuterieToast = setTimeout(() => el.classList.remove('toast--visible'), 2800);
+}
+
+function feliciter(id) {
+  const s = etat.saisies[id];
+  if (!s) return;
+  const { semaine } = PAR_ID.get(id);
+  const seances = semaine.jours.filter((j) => j.type !== 'repos');
+  const faites = seances.filter((j) => FAIT.includes(etat.saisies[j.id]?.statut)).length;
+  if (s.statut === 'sautee') { toast('Séance notée comme sautée', { icone: 'point', ton: 'neutre' }); return; }
+  const bilan = faites === seances.length ? `semaine ${semaine.numero} complète !` : `${faites}/${seances.length} cette semaine`;
+  toast(`Séance enregistrée · ${bilan}`);
+  navigator.vibrate?.(faites === seances.length ? [20, 60, 20] : 15);
+}
+
+function changerJour(pas) {
+  jourVu = C.ajouterJours(jourVu ?? aujourdhui(), pas);
+  rendre();
+  main.querySelector('.carte-seance, .carte-repos, .carte-fin')?.classList.add(pas < 0 ? 'glisse-precedent' : 'glisse-suivant');
+}
+
+// Aujourd'hui : un balayage horizontal passe au jour précédent ou suivant.
+let departBalayage = null;
+main.addEventListener('touchstart', (e) => {
+  departBalayage = main.dataset.ecran === 'aujourdhui' && e.touches.length === 1 && !e.target.closest('input, textarea, .defile')
+    ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, { passive: true });
+main.addEventListener('touchend', (e) => {
+  if (!departBalayage) return;
+  const dx = e.changedTouches[0].clientX - departBalayage.x;
+  const dy = e.changedTouches[0].clientY - departBalayage.y;
+  departBalayage = null;
+  if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+  ACTIONS[dx < 0 ? 'lendemain' : 'veille']();
+}, { passive: true });
 
 // ---------- Navigation ----------
 function lireRoute(hash = location.hash) {
@@ -1502,6 +1559,13 @@ function rendre() {
   }
   main.innerHTML = html;
   main.dataset.ecran = r.nom;
+  document.body.dataset.ecran = r.nom;
+  if (changement) {
+    rendreBandeaux();
+    main.classList.remove('entree');
+    void main.offsetWidth;
+    main.classList.add('entree');
+  }
   main.classList.toggle('a-barre', [...main.querySelectorAll('.barre-fixe')].some((el) => el.getClientRects().length > 0));
   document.title = `${TITRES[r.nom]} · Prépa Paris`;
   for (const a of document.querySelectorAll('.onglets a')) {
@@ -1539,8 +1603,8 @@ function aller(hash, { remplacer = false } = {}) {
 
 // ---------- Actions ----------
 const ACTIONS = {
-  veille() { jourVu = C.ajouterJours(jourVu ?? aujourdhui(), -1); rendre(); },
-  lendemain() { jourVu = C.ajouterJours(jourVu ?? aujourdhui(), 1); rendre(); },
+  veille() { changerJour(-1); },
+  lendemain() { changerJour(1); },
   'retour-aujourdhui'() { jourVu = null; rendre(); },
   retour(el, e) {
     const cible = el.getAttribute('href');
@@ -1553,6 +1617,7 @@ const ACTIONS = {
     aller(`#/seance/${id}/saisie`);
   },
   termine(el) {
+    feliciter(el.dataset.id);
     // Retour à l'écran d'où vient la saisie (Aujourd'hui ou la séance), sinon au détail de la séance.
     if (routePrecedente && lireRoute(routePrecedente).nom !== 'saisie') history.back();
     else aller(`#/seance/${el.dataset.id}`);

@@ -2,7 +2,7 @@
 // deployer.sh incrémente VERSION à chaque publication : le nouveau cache s'installe en attente
 // et l'appli affiche « Nouvelle version disponible — Recharger ».
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const PREFIXE = 'prepa-paris-';
 const CACHE = `${PREFIXE}${VERSION}`;
 const FICHIERS = [
@@ -13,6 +13,9 @@ const FICHIERS = [
   './programme.js',
   './calculs.js',
   './stockage.js',
+  './icones.js',
+  './polices/barlow-condensed-700.woff2',
+  './polices/barlow-condensed-800.woff2',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

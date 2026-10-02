@@ -11,6 +11,8 @@ Appli web de suivi du programme d'entraînement (11 semaines, du lundi 5 octobre
 | `programme.js` | Le programme, transcrit tel quel (source unique du contenu des séances) |
 | `calculs.js` | Dates, allures, chronos, règles du programme (fonctions pures) |
 | `stockage.js` | Enregistrement local, export, import |
+| `icones.js` | Pictogrammes SVG au trait (types de séance, stations, sections), teintés par le CSS |
+| `polices/` | Barlow Condensed 700 et 800 (titres et grands chiffres), hébergée ici pour marcher hors ligne · licence OFL |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Fonctionnement hors ligne et installation sur l'écran d'accueil |
 | `tests/` | Tests des calculs, contrôle de fidélité au programme, vérifications dans le navigateur |
 | `outils/generer-icones.mjs` | Régénère les icônes (`node outils/generer-icones.mjs`) |

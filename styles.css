@@ -660,14 +660,13 @@ tbody th { font-weight: 700; }
 .abbr { padding: 0 4px; border-radius: 6px; background: var(--surface-2); text-decoration-thickness: 1.5px; }
 .encadre .abbr, .stats .abbr { background: var(--surface); }
 
-/* Tuiles d'icônes (emoji du système, aucun téléchargement). */
+/* Tuiles d'icônes (pictogrammes SVG de icones.js). */
 .tuile {
   flex: none;
   display: inline-grid; place-items: center;
   width: 40px; height: 40px;
   border-radius: 12px;
   background: var(--surface-2);
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--police);
   font-size: 1.25rem; line-height: 1;
 }
 .tuile--grande {
@@ -686,8 +685,6 @@ tbody th { font-weight: 700; }
   background: var(--surface-2);
   font-size: 0.9375rem; font-weight: 700; line-height: 1.25;
 }
-.puce__emoji, .puce__emojis { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--police); }
-.puce__emojis { letter-spacing: 2px; }
 .puce--accent { background: var(--accent-doux); color: var(--accent-lien); }
 .puces .phase, .puces .pastille { min-height: 32px; padding: 3px 12px; }
 .encadre .puce { background: var(--surface); }
@@ -745,13 +742,11 @@ tbody th { font-weight: 700; }
 .bande__jour:active { transform: scale(0.96); }
 .bande__nom { color: var(--texte-2); font-size: 0.75rem; font-weight: 750; }
 .bande__num { font-size: 1.125rem; font-weight: 850; }
-.bande__emoji { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--police); font-size: 1rem; line-height: 1.3; }
-.bande__jour .signe { position: absolute; top: -7px; right: -5px; width: 22px; height: 22px; font-size: 0.6875rem; }
 .bande__jour--auj .bande__nom { color: var(--accent-lien); }
 .bande__jour--actif { border-color: var(--accent); background: var(--accent-doux); }
 
 .rappel { align-items: center; border-left-width: 0; background: var(--accent-doux); }
-.rappel__signe { width: auto; height: auto; background: none; font-size: 1.375rem; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", var(--police); }
+.rappel__signe { width: auto; height: auto; background: none; }
 
 .carte-seance, .carte-repos, .carte-fin { border-radius: var(--rayon-grand); }
 .carte-seance { border-top: 1px solid var(--bord); }
@@ -883,6 +878,158 @@ tbody th { font-weight: 700; }
   .carte__actions { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 }
 
+/* ---------- Version plus conviviale (02/10) : police sport, pictogrammes SVG teintés, retours visuels ---------- */
+@font-face {
+  font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap;
+  src: url("./polices/barlow-condensed-700.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Barlow Condensed"; font-style: normal; font-weight: 800; font-display: swap;
+  src: url("./polices/barlow-condensed-800.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+:root {
+  --police-titre: "Barlow Condensed", var(--police);
+  --t-orange: #c2410c; --t-vert: #0f766e; --t-bleu: #1d4ed8; --t-violet: #6d28d9;
+  --t-rose: #be123c; --t-ambre: #a16207; --t-nuit: #4338ca;
+  --ressort: cubic-bezier(0.2, 0.9, 0.3, 1.15);
+  --sortie: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --t-orange: #ff8a50; --t-vert: #2dd4bf; --t-bleu: #60a5fa; --t-violet: #a78bfa;
+    --t-rose: #fb7185; --t-ambre: #fbbf24; --t-nuit: #a5b4fc;
+  }
+}
+[data-teinte="orange"] { --t: var(--t-orange); }
+[data-teinte="vert"] { --t: var(--t-vert); }
+[data-teinte="bleu"] { --t: var(--t-bleu); }
+[data-teinte="violet"] { --t: var(--t-violet); }
+[data-teinte="rose"] { --t: var(--t-rose); }
+[data-teinte="ambre"] { --t: var(--t-ambre); }
+[data-teinte="nuit"] { --t: var(--t-nuit); }
+[data-teinte="neutre"] { --t: var(--texte-2); }
+
+/* Titres et grands chiffres en condensé, façon dossard. */
+h1, .titre-ecran, .seance__titre, .carte__titre, .entete__compte, .anneau__centre b, .bande__num, .grand-chiffre, .semaine__num, .suivante__titre {
+  font-family: var(--police-titre);
+  letter-spacing: 0.005em;
+}
+.titre-ecran, main > h1:not(.seance__titre):not(.visuellement-cache) { font-size: 2.25rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.05; }
+.entete__compte { font-size: clamp(4.25rem, 23vw, 6rem); font-weight: 800; letter-spacing: 0; line-height: 0.92; }
+.anneau__centre b { font-size: 1.625rem; font-weight: 800; }
+.carte__titre { font-size: 1.75rem; font-weight: 800; line-height: 1.1; }
+.seance__titre { font-size: 2.125rem; font-weight: 800; line-height: 1.08; }
+.suivante__titre { font-size: 1.3125rem; font-weight: 800; }
+.grand-chiffre, .carte-fin .grand-chiffre { font-weight: 800; }
+.semaine__num { font-weight: 800; }
+
+/* Tuiles : pictogramme teinté sur fond légèrement coloré. */
+.tuile { position: relative; color: var(--t, var(--texte-2)); background: color-mix(in srgb, var(--t, var(--texte-2)) 13%, var(--surface)); }
+.tuile svg { width: 56%; height: 56%; }
+.tuile--grande { --t: var(--ph, var(--accent)); color: var(--t); background: color-mix(in srgb, var(--t) 16%, var(--surface)); }
+.tuile--grande svg { width: 52%; height: 52%; stroke-width: 2.2; }
+.stats .tuile, .encadre .stats .tuile { background: color-mix(in srgb, var(--t, var(--texte-2)) 14%, var(--surface)); }
+.picto { display: inline-flex; flex: none; color: var(--t, currentColor); }
+.picto svg { width: 18px; height: 18px; }
+.entete__course { display: flex; align-items: center; gap: 8px; }
+.carte__objectif { display: flex; align-items: flex-start; gap: 8px; }
+.carte__objectif .picto { margin-top: 3px; }
+.enregistre .picto { color: var(--texte-2); }
+.puce__icone { display: inline-flex; color: var(--t, currentColor); }
+.puce__icone svg { width: 17px; height: 17px; }
+.puce__icones { display: inline-flex; gap: 3px; color: var(--t-ambre); }
+.puce__icones svg { width: 17px; height: 17px; }
+.rappel__signe { display: inline-flex; color: var(--accent-lien); }
+.rappel__signe svg { width: 22px; height: 22px; }
+
+/* Carte du jour : coche verte sur la tuile quand la séance est faite. */
+.carte-seance[data-statut="faite"] .tuile--grande::after, .carte-seance[data-statut="modifiee"] .tuile--grande::after {
+  content: "✓";
+  position: absolute; right: -6px; bottom: -6px;
+  display: grid; place-items: center;
+  width: 24px; height: 24px;
+  border: 2.5px solid var(--surface); border-radius: 50%;
+  background: var(--ok); color: var(--sur-ok);
+  font: 900 0.75rem/1 var(--police);
+}
+.carte-seance[data-statut="modifiee"] .tuile--grande::after { background: var(--modif); content: "◐"; }
+
+/* Navigation entre les jours : sous l'en-tête, plus de barre fixe empilée sur les onglets. */
+.navjour {
+  position: static;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  margin: 0 0 12px; padding: 0;
+  border: 0; background: none;
+}
+.navjour .bouton-icone { width: 44px; height: 44px; border-color: var(--bord); }
+.navjour__date > span { font-size: 1.0625rem; }
+
+/* Bande de la semaine : le statut prend la place du pictogramme, sans déborder de la case. */
+.bande__jour { gap: 3px; min-height: 84px; padding: 9px 2px 8px; }
+.bande__num { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.bande__icone { display: grid; place-items: center; height: 24px; color: var(--t); }
+.bande__icone svg { width: 20px; height: 20px; }
+.bande__jour .signe { position: static; width: 24px; height: 24px; font-size: 0.75rem; }
+.bande__jour[data-statut="faite"] { border-color: color-mix(in srgb, var(--ok) 55%, var(--bord)); background: color-mix(in srgb, var(--ok) 12%, var(--surface)); }
+.bande__jour[data-statut="sautee"] .bande__num { color: var(--texte-2); text-decoration: line-through; text-decoration-thickness: 2px; }
+.bande__jour[data-statut="a-faire"]:not(.bande__jour--actif) { border-color: color-mix(in srgb, var(--accent) 60%, var(--bord)); border-style: dashed; }
+.bande__jour--actif, .bande__jour--actif[data-statut] { border-color: var(--accent); border-style: solid; box-shadow: 0 0 0 1.5px var(--accent); }
+
+/* Bandeau d'installation : une ligne, mode d'emploi dépliable. */
+.bandeau--install { display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 4px 4px 4px 12px; }
+.bandeau__picto { display: inline-flex; color: var(--accent-lien); }
+.bandeau__picto svg { width: 20px; height: 20px; }
+.bandeau__texte { flex: 1; min-width: 0; }
+.bandeau__texte > summary { display: flex; align-items: center; gap: 6px; min-height: 44px; cursor: pointer; list-style: none; }
+.bandeau__texte > summary::-webkit-details-marker { display: none; }
+.bandeau__texte > summary::after { content: "›"; color: var(--texte-2); font-weight: 800; transition: transform 150ms var(--sortie); }
+.bandeau__texte[open] > summary::after { transform: rotate(90deg); }
+.bandeau__texte ul { margin: 0 0 8px; }
+.bouton--petit { min-height: 44px; padding: 6px 14px; }
+.bouton-icone--discret { flex: none; width: 44px; height: 44px; border-color: transparent; background: transparent; color: var(--texte-2); }
+
+/* Saisie en plein écran sur téléphone : les onglets s'effacent, « Terminé » reste sous le pouce. */
+@media (max-width: 1023.98px) {
+  body[data-ecran="saisie"] { --bas: env(safe-area-inset-bottom, 0px); }
+  body[data-ecran="saisie"] .onglets { display: none; }
+}
+
+/* Message flottant après « Terminé ». */
+.toast {
+  position: fixed; z-index: 70;
+  left: 50%; bottom: calc(var(--bas) + 16px);
+  display: flex; align-items: center; gap: 10px;
+  width: max-content; max-width: calc(100% - 32px);
+  padding: 10px 18px 10px 10px;
+  border-radius: 999px;
+  background: var(--texte); color: var(--fond);
+  font-weight: 750; line-height: 1.3;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+  opacity: 0; transform: translate(-50%, 18px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 180ms var(--sortie), transform 320ms var(--ressort);
+}
+.toast--visible { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.toast__picto { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--ok); color: var(--sur-ok); }
+.toast__picto svg { stroke-width: 3; }
+.toast[data-ton="neutre"] .toast__picto { background: var(--texte-2); color: var(--fond); }
+.toast--visible .toast__picto svg { animation: coche 380ms 90ms var(--ressort) both; }
+@keyframes coche { from { opacity: 0; transform: scale(0.3) rotate(-20deg); } to { opacity: 1; transform: none; } }
+
+/* Arrivée sur un écran (fondu) et passage d'un jour à l'autre (glissé). */
+main.entree { animation: entree 200ms var(--sortie); }
+@keyframes entree { from { opacity: 0; } }
+.glisse-suivant { animation: glisse-suivant 240ms var(--sortie); }
+.glisse-precedent { animation: glisse-precedent 240ms var(--sortie); }
+@keyframes glisse-suivant { from { opacity: 0; transform: translateX(24px); } }
+@keyframes glisse-precedent { from { opacity: 0; transform: translateX(-24px); } }
+
+/* Retour tactile homogène sur les cartes cliquables. */
+.lien-carte, .jour, .journal a { transition: transform 120ms ease-out, background-color 120ms ease-out; }
+.lien-carte:active, .jour:active, .journal a:active { transform: scale(0.985); }
+
 /* ---------- Mouvement réduit ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
@@ -943,7 +1090,6 @@ tbody th { font-weight: 700; }
   .split__detail { min-width: 0; max-width: 720px; }
 
   .barre-action { position: sticky; }
-  .navjour { position: static; margin-top: 16px; padding: 8px; border: 1px solid var(--bord); border-radius: 12px; }
   .barre-action { bottom: 0; padding: 24px 0 16px; }
   .barre-action > * { max-width: none; }
 }
